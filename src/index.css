@@ -1,0 +1,4 @@
+/* global reset leftovers handled in feature CSS */
+html {
+  -webkit-text-size-adjust: 100%;
+}
