@@ -3,11 +3,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FontZoom } from './components/FontZoom'
+import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
+import { PrayerPicker } from './components/PrayerPicker'
 import { SituationPicker } from './components/SituationPicker'
 import { WakeLockToggle } from './components/WakeLockToggle'
-import { shortMemorialPrayer } from './data/prayer'
+import { getPrayerDocument } from './data/catalog'
 import {
   isWakeLockSupported,
   releaseWakeLock,
@@ -16,7 +18,10 @@ import {
 import { loadPrefs, savePrefs } from './lib/prefs'
 import {
   FONT_SIZE_STEP,
+  type AfterLitanyId,
   type AppPrefs,
+  type PrayerId,
+  type ReadingId,
   type SituationId,
 } from './types'
 import './short-memorial-prayer.css'
@@ -25,6 +30,7 @@ export function ShortMemorialPrayerPage() {
   const [prefs, setPrefs] = useState<AppPrefs>(() => loadPrefs())
   const wakeRef = useRef<Awaited<ReturnType<typeof requestWakeLock>>>(null)
   const wakeSupported = isWakeLockSupported()
+  const prayer = getPrayerDocument(prefs.prayerId)
 
   useEffect(() => {
     savePrefs(prefs)
@@ -36,6 +42,10 @@ export function ShortMemorialPrayerPage() {
       `${prefs.fontSizePx}px`,
     )
   }, [prefs.fontSizePx])
+
+  useEffect(() => {
+    document.title = `${prayer.shortTitle} · 위령기도`
+  }, [prayer.shortTitle])
 
   useEffect(() => {
     let cancelled = false
@@ -78,17 +88,23 @@ export function ShortMemorialPrayerPage() {
     setPrefs((prev) => ({ ...prev, ...partial }))
   }
 
+  function selectPrayer(prayerId: PrayerId) {
+    updatePrefs({ prayerId })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <div className="smp">
       <header className="smp__header">
         <div className="smp__header-row">
-          <h1 className="smp__title">{shortMemorialPrayer.title}</h1>
+          <h1 className="smp__title">{prayer.title}</h1>
           <FontZoom
             fontSizePx={prefs.fontSizePx}
             step={FONT_SIZE_STEP}
             onChange={(fontSizePx) => updatePrefs({ fontSizePx })}
           />
         </div>
+        <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
         <NameInput
           value={prefs.deceasedName}
           onChange={(deceasedName) => updatePrefs({ deceasedName })}
@@ -101,24 +117,48 @@ export function ShortMemorialPrayerPage() {
       </header>
 
       <main className="smp__main">
-        <SituationPicker
-          value={prefs.situationId}
-          onChange={(situationId: SituationId) => updatePrefs({ situationId })}
-        />
+        {prayer.hasShortSituations ? (
+          <SituationPicker
+            value={prefs.situationId}
+            onChange={(situationId: SituationId) =>
+              updatePrefs({ situationId })
+            }
+          />
+        ) : null}
+
+        {prayer.hasLongOptions ? (
+          <LongOptions
+            readingId={prefs.readingId}
+            litanyOn={prefs.litanyOn}
+            afterLitanyId={prefs.afterLitanyId}
+            onReadingChange={(readingId: ReadingId) =>
+              updatePrefs({ readingId })
+            }
+            onLitanyChange={(litanyOn) => updatePrefs({ litanyOn })}
+            onAfterChange={(afterLitanyId: AfterLitanyId) =>
+              updatePrefs({ afterLitanyId })
+            }
+          />
+        ) : null}
+
         <PrayerBody
-          sections={shortMemorialPrayer.sections}
+          sections={prayer.sections}
           deceasedName={prefs.deceasedName}
           situationId={prefs.situationId}
+          readingId={prefs.readingId}
+          litanyOn={prefs.litanyOn}
+          afterLitanyId={prefs.afterLitanyId}
         />
+
         <footer className="smp__footer">
           <p>
             기도문 출처:{' '}
             <a
-              href={shortMemorialPrayer.sourceUrl}
+              href={prayer.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
-              가톨릭 굿뉴스 위령기도 2(짧은 위령 기도)
+              {prayer.sourceLabel}
             </a>
           </p>
           <p className="smp__footer-note">

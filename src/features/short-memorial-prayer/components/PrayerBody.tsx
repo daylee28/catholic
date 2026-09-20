@@ -2,7 +2,14 @@
 // FR-1, FR-2
 
 import { fillNameParts } from '../lib/fillName'
-import type { LineRole, PrayerLine, PrayerSection, SituationId } from '../types'
+import type {
+  AfterLitanyId,
+  LineRole,
+  PrayerLine,
+  PrayerSection,
+  ReadingId,
+  SituationId,
+} from '../types'
 
 const ROLE_MARK: Record<LineRole, string> = {
   leader: '╋',
@@ -45,24 +52,57 @@ function PrayerLineView({
   )
 }
 
+function shouldShowSection(
+  section: PrayerSection,
+  opts: {
+    situationId: SituationId
+    readingId: ReadingId
+    litanyOn: boolean
+    afterLitanyId: AfterLitanyId
+  },
+): boolean {
+  if (section.type === 'situation' && section.situationId) {
+    return section.situationId === opts.situationId
+  }
+  if (section.variantGroup === 'reading') {
+    return section.variantId === opts.readingId
+  }
+  if (section.variantGroup === 'litany') {
+    return opts.litanyOn
+  }
+  if (section.variantGroup === 'afterLitany') {
+    return section.variantId === opts.afterLitanyId
+  }
+  return true
+}
+
 type PrayerBodyProps = {
   sections: PrayerSection[]
   deceasedName: string
   situationId: SituationId
+  readingId: ReadingId
+  litanyOn: boolean
+  afterLitanyId: AfterLitanyId
 }
 
 export function PrayerBody({
   sections,
   deceasedName,
   situationId,
+  readingId,
+  litanyOn,
+  afterLitanyId,
 }: PrayerBodyProps) {
   return (
     <div className="prayer-body">
       {sections.map((section) => {
         if (
-          section.type === 'situation' &&
-          section.situationId &&
-          section.situationId !== situationId
+          !shouldShowSection(section, {
+            situationId,
+            readingId,
+            litanyOn,
+            afterLitanyId,
+          })
         ) {
           return null
         }

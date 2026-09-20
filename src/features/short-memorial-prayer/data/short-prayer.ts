@@ -5,8 +5,12 @@
 import type { PrayerDocument } from '../types'
 
 export const shortMemorialPrayer: PrayerDocument = {
+  id: 'short',
+  shortTitle: '짧은 위령기도',
   title: '위령기도 2 (짧은 위령 기도)',
   sourceUrl: 'https://app.catholic.or.kr/web/prayer/?flag=7&ingId=69',
+  sourceLabel: '가톨릭 굿뉴스 위령기도 2(짧은 위령 기도)',
+  hasShortSituations: true,
   sections: [
     {
       id: 'intro',
