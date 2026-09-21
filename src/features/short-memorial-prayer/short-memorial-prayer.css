@@ -456,8 +456,8 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .reading-aids__chip {
-    font-size: 0.82rem;
-    padding: 0.3rem 0.4rem;
+  .scroll-dock__speed-text {
+    width: 100%;
+    margin-left: 0;
   }
 }
