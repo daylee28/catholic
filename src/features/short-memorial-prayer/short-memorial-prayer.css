@@ -345,14 +345,16 @@ body {
 .scroll-scrubber__thumb {
   position: absolute;
   left: 50%;
+  top: 0;
   width: 0.95rem;
   height: 0.95rem;
   border-radius: 50%;
   border: 2px solid var(--accent);
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   pointer-events: none;
+  will-change: top;
 }
 
 .long-options {

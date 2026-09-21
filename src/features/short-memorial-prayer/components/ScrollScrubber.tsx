@@ -1,75 +1,105 @@
-// Overlay scrubber — only visible while the user is scrolling
+// Overlay scrubber — show only on user scroll; position via DOM (no React jitter)
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
-const HIDE_AFTER_MS = 900
+const HIDE_AFTER_MS = 1000
 
-function getScrollMetrics() {
-  const max = Math.max(
-    0,
-    document.documentElement.scrollHeight - window.innerHeight,
-  )
-  const y = window.scrollY
-  const ratio = max <= 0 ? 0 : Math.min(1, Math.max(0, y / max))
-  return { max, ratio }
+function maxScrollY(): number {
+  const el = document.documentElement
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
+function scrollRatio(): number {
+  const max = maxScrollY()
+  if (max <= 0) return 0
+  const y = window.scrollY || document.documentElement.scrollTop
+  return Math.min(1, Math.max(0, y / max))
 }
 
 export function ScrollScrubber() {
+  const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const fillRef = useRef<HTMLDivElement>(null)
+  const thumbRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
   const hideTimerRef = useRef(0)
-  const [ratio, setRatio] = useState(0)
   const [needed, setNeeded] = useState(false)
-  const [visible, setVisible] = useState(false)
 
-  const refresh = useCallback(() => {
-    const m = getScrollMetrics()
-    setRatio(m.ratio)
-    setNeeded(m.max > 40)
-  }, [])
+  function paint(ratio: number) {
+    const track = trackRef.current
+    const fill = fillRef.current
+    const thumb = thumbRef.current
+    if (!track || !fill || !thumb) return
 
-  const showBriefly = useCallback(() => {
+    const trackH = track.clientHeight
+    const thumbH = thumb.offsetHeight || 14
+    const travel = Math.max(0, trackH - thumbH)
+    const y = ratio * travel
+
+    fill.style.height = `${y + thumbH / 2}px`
+    thumb.style.top = `${y}px`
+  }
+
+  function setVisible(on: boolean) {
+    rootRef.current?.classList.toggle('scroll-scrubber--visible', on)
+  }
+
+  function showBriefly() {
     if (draggingRef.current) return
     setVisible(true)
     window.clearTimeout(hideTimerRef.current)
     hideTimerRef.current = window.setTimeout(() => {
       if (!draggingRef.current) setVisible(false)
     }, HIDE_AFTER_MS)
-  }, [])
+  }
+
+  function jumpToClientY(clientY: number) {
+    const track = trackRef.current
+    const thumb = thumbRef.current
+    if (!track) return
+
+    const rect = track.getBoundingClientRect()
+    const thumbH = thumb?.offsetHeight || 14
+    const travel = Math.max(1, rect.height - thumbH)
+    // Aim thumb center under finger
+    const y = clientY - rect.top - thumbH / 2
+    const ratio = Math.min(1, Math.max(0, y / travel))
+    const max = maxScrollY()
+    window.scrollTo({ top: ratio * max })
+    paint(ratio)
+  }
 
   useEffect(() => {
-    refresh()
+    const syncNeeded = () => {
+      setNeeded(maxScrollY() > 40)
+      paint(scrollRatio())
+    }
 
+    syncNeeded()
+
+    // Position follows all scrolling (incl. auto), but visibility only on user input
     const onScroll = () => {
-      refresh()
+      paint(scrollRatio())
+    }
+
+    const onUserIntent = () => {
+      paint(scrollRatio())
       showBriefly()
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', refresh)
-    const ro = new ResizeObserver(refresh)
-    ro.observe(document.documentElement)
+    window.addEventListener('wheel', onUserIntent, { passive: true })
+    window.addEventListener('touchmove', onUserIntent, { passive: true })
+    window.addEventListener('resize', syncNeeded)
 
     return () => {
       window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', refresh)
-      ro.disconnect()
+      window.removeEventListener('wheel', onUserIntent)
+      window.removeEventListener('touchmove', onUserIntent)
+      window.removeEventListener('resize', syncNeeded)
       window.clearTimeout(hideTimerRef.current)
     }
-  }, [refresh, showBriefly])
-
-  const jumpToClientY = useCallback((clientY: number) => {
-    const track = trackRef.current
-    if (!track) return
-    const rect = track.getBoundingClientRect()
-    const t = (clientY - rect.top) / rect.height
-    const clamped = Math.min(1, Math.max(0, t))
-    const max = Math.max(
-      0,
-      document.documentElement.scrollHeight - window.innerHeight,
-    )
-    window.scrollTo({ top: clamped * max })
-    setRatio(clamped)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
@@ -100,12 +130,9 @@ export function ScrollScrubber() {
 
   return (
     <div
-      className={
-        visible
-          ? 'scroll-scrubber scroll-scrubber--visible'
-          : 'scroll-scrubber'
-      }
-      aria-hidden={!visible}
+      ref={rootRef}
+      className="scroll-scrubber"
+      aria-hidden
       aria-label="읽기 위치"
     >
       <div
@@ -116,14 +143,8 @@ export function ScrollScrubber() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <div
-          className="scroll-scrubber__fill"
-          style={{ height: `${ratio * 100}%` }}
-        />
-        <div
-          className="scroll-scrubber__thumb"
-          style={{ top: `${ratio * 100}%` }}
-        />
+        <div ref={fillRef} className="scroll-scrubber__fill" />
+        <div ref={thumbRef} className="scroll-scrubber__thumb" />
       </div>
     </div>
   )

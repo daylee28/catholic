@@ -1,8 +1,7 @@
-// Auto-scroll for prayer reading — pauses on manual scroll, resumes after idle
+// Auto-scroll — pause only on real user input (not our own scroll events)
 
 import { useEffect, useRef } from 'react'
 
-/** px per second for speed levels 1–5 (elderly-friendly slow range) */
 const SPEED_PX_PER_SEC: Record<number, number> = {
   1: 18,
   2: 28,
@@ -13,8 +12,12 @@ const SPEED_PX_PER_SEC: Record<number, number> = {
 
 const RESUME_AFTER_MS = 1800
 
+function maxScrollY(): number {
+  const el = document.documentElement
+  return Math.max(0, el.scrollHeight - el.clientHeight)
+}
+
 export function useAutoScroll(enabled: boolean, speedLevel: number) {
-  const ignoreScrollUntilRef = useRef(0)
   const pausedUntilRef = useRef(0)
   const lastTsRef = useRef(0)
   const carryRef = useRef(0)
@@ -34,11 +37,6 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
       carryRef.current = 0
     }
 
-    const onUserScroll = () => {
-      if (Date.now() < ignoreScrollUntilRef.current) return
-      pauseFromUser()
-    }
-
     let raf = 0
 
     const tick = (ts: number) => {
@@ -49,9 +47,9 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
         return
       }
 
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight
-      if (maxScroll <= 0 || window.scrollY >= maxScroll - 1) {
+      const max = maxScrollY()
+      const y = window.scrollY || document.documentElement.scrollTop
+      if (max <= 0 || y >= max - 1) {
         lastTsRef.current = 0
         return
       }
@@ -69,24 +67,22 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
 
       const delta = Math.floor(carryRef.current)
       carryRef.current -= delta
-
-      ignoreScrollUntilRef.current = Date.now() + 80
-      window.scrollBy(0, delta)
+      window.scrollBy(0, Math.min(delta, max - y))
     }
 
     raf = requestAnimationFrame(tick)
 
+    // Do NOT listen to `scroll` — auto-scroll itself fires scroll and was
+    // falsely pausing/resuming, which made the scrubber jump.
     window.addEventListener('wheel', pauseFromUser, { passive: true })
     window.addEventListener('touchmove', pauseFromUser, { passive: true })
     window.addEventListener('keydown', pauseFromUser, { passive: true })
-    window.addEventListener('scroll', onUserScroll, { passive: true })
 
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('wheel', pauseFromUser)
       window.removeEventListener('touchmove', pauseFromUser)
       window.removeEventListener('keydown', pauseFromUser)
-      window.removeEventListener('scroll', onUserScroll)
     }
   }, [enabled, speedLevel])
 }
