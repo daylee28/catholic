@@ -51,10 +51,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(247, 243, 234, 0.97);
+  /* Solid bg — backdrop-filter flickers while scrubbing fast */
+  background: var(--paper);
   border-bottom: 2px solid var(--accent);
   padding: 0.5rem var(--page-pad) 0.55rem;
-  backdrop-filter: blur(6px);
 }
 
 .smp__top {
@@ -207,9 +207,8 @@ body {
   bottom: 0;
   z-index: 20;
   padding: 0.45rem var(--page-pad) calc(0.45rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(247, 243, 234, 0.97);
+  background: var(--paper);
   border-top: 2px solid var(--accent);
-  backdrop-filter: blur(8px);
 }
 
 .scroll-dock__inner {

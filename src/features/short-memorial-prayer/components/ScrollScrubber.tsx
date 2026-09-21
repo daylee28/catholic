@@ -1,6 +1,7 @@
-// Overlay scrubber — show only on user wheel/touch; position via DOM (no React jitter)
+// Overlay scrubber — manual drag only; rAF-throttled scroll to avoid top flicker
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { notifyUserScrollIntent } from '../lib/useAutoScroll'
 
 const HIDE_AFTER_MS = 1000
 
@@ -9,11 +10,14 @@ function maxScrollY(): number {
   return Math.max(0, el.scrollHeight - el.clientHeight)
 }
 
+function currentScrollY(): number {
+  return window.scrollY || document.documentElement.scrollTop || 0
+}
+
 function scrollRatio(): number {
   const max = maxScrollY()
   if (max <= 0) return 0
-  const y = document.documentElement.scrollTop || window.scrollY
-  return Math.min(1, Math.max(0, y / max))
+  return Math.min(1, Math.max(0, currentScrollY() / max))
 }
 
 type Props = {
@@ -30,6 +34,8 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const hideTimerRef = useRef(0)
   const userInteractedUntilRef = useRef(0)
   const autoScrollOnRef = useRef(autoScrollOn)
+  const pendingTopRef = useRef<number | null>(null)
+  const scrollRafRef = useRef(0)
   const [needed, setNeeded] = useState(false)
 
   autoScrollOnRef.current = autoScrollOn
@@ -45,7 +51,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     const travel = Math.max(0, trackH - thumbH)
     const y = ratio * travel
 
-    fill.style.height = `${y + thumbH / 2}px`
+    fill.style.height = `${Math.max(thumbH / 2, y + thumbH / 2)}px`
     thumb.style.top = `${y}px`
   }
 
@@ -63,6 +69,15 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     }, HIDE_AFTER_MS)
   }
 
+  function flushScroll() {
+    scrollRafRef.current = 0
+    const top = pendingTopRef.current
+    if (top === null) return
+    pendingTopRef.current = null
+    // Single scroll API — avoid documentElement.scrollTop + window fighting
+    window.scrollTo(0, top)
+  }
+
   function jumpToClientY(clientY: number) {
     const track = trackRef.current
     const thumb = thumbRef.current
@@ -74,9 +89,13 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     const y = clientY - rect.top - dragOffsetRef.current
     const ratio = Math.min(1, Math.max(0, y / travel))
     const max = maxScrollY()
-    // Instant scroll — avoid smooth scroll fighting the thumb
-    document.documentElement.scrollTop = ratio * max
+
+    // Thumb follows finger immediately; page scroll coalesced to 1/frame
     paint(ratio)
+    pendingTopRef.current = ratio * max
+    if (!scrollRafRef.current) {
+      scrollRafRef.current = requestAnimationFrame(flushScroll)
+    }
   }
 
   useEffect(() => {
@@ -87,11 +106,9 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
 
     syncNeeded()
 
-    // Position follows scroll (incl. auto), but never overwrite thumb while dragging
     const onScroll = () => {
       if (draggingRef.current) return
       paint(scrollRatio())
-      // Pure auto-scroll: keep scrubber hidden
       if (
         autoScrollOnRef.current &&
         Date.now() > userInteractedUntilRef.current
@@ -100,7 +117,6 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       }
     }
 
-    // Visibility only from real user scroll input — not from `scroll` events
     const onUserIntent = () => {
       if (draggingRef.current) return
       paint(scrollRatio())
@@ -118,11 +134,11 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       window.removeEventListener('touchmove', onUserIntent)
       window.removeEventListener('resize', syncNeeded)
       window.clearTimeout(hideTimerRef.current)
+      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // When auto-scroll turns on with no recent hand/wheel, force hide
   useEffect(() => {
     if (autoScrollOn && Date.now() > userInteractedUntilRef.current) {
       if (!draggingRef.current) setVisible(false)
@@ -130,7 +146,9 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   }, [autoScrollOn])
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
+    e.preventDefault()
     draggingRef.current = true
+    notifyUserScrollIntent()
     userInteractedUntilRef.current = Date.now() + HIDE_AFTER_MS
     setVisible(true)
     window.clearTimeout(hideTimerRef.current)
@@ -142,7 +160,6 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       const thumbRect = thumb.getBoundingClientRect()
       const onThumb =
         e.clientY >= thumbRect.top && e.clientY <= thumbRect.bottom
-      // Grabbing the thumb: keep finger offset. Empty track: center under finger.
       dragOffsetRef.current = onThumb
         ? e.clientY - thumbRect.top
         : thumbH / 2
@@ -155,15 +172,19 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!draggingRef.current) return
+    notifyUserScrollIntent()
     jumpToClientY(e.clientY)
   }
 
   function onPointerUp(e: PointerEvent<HTMLDivElement>) {
     draggingRef.current = false
+    if (scrollRafRef.current) {
+      cancelAnimationFrame(scrollRafRef.current)
+      flushScroll()
+    }
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
-    // Sync once from settled scroll position
     paint(scrollRatio())
     window.clearTimeout(hideTimerRef.current)
     hideTimerRef.current = window.setTimeout(() => {

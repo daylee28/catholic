@@ -10,6 +10,13 @@ const SPEED_PX_PER_SEC: Record<number, number> = {
 
 const RESUME_AFTER_MS = 1800
 
+/** Scrubber / other UI can pause auto-scroll without being wheel/touch */
+export const USER_SCROLL_INTENT_EVENT = 'prayer-user-scroll-intent'
+
+export function notifyUserScrollIntent() {
+  window.dispatchEvent(new Event(USER_SCROLL_INTENT_EVENT))
+}
+
 function maxScrollY(): number {
   const el = document.documentElement
   return Math.max(0, el.scrollHeight - el.clientHeight)
@@ -70,17 +77,17 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
 
     raf = requestAnimationFrame(tick)
 
-    // Do NOT listen to `scroll` — auto-scroll itself fires scroll and was
-    // falsely pausing/resuming, which made the scrubber jump.
     window.addEventListener('wheel', pauseFromUser, { passive: true })
     window.addEventListener('touchmove', pauseFromUser, { passive: true })
     window.addEventListener('keydown', pauseFromUser, { passive: true })
+    window.addEventListener(USER_SCROLL_INTENT_EVENT, pauseFromUser)
 
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('wheel', pauseFromUser)
       window.removeEventListener('touchmove', pauseFromUser)
       window.removeEventListener('keydown', pauseFromUser)
+      window.removeEventListener(USER_SCROLL_INTENT_EVENT, pauseFromUser)
     }
   }, [enabled, speedLevel])
 }
