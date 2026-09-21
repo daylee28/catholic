@@ -17,6 +17,7 @@
   --read-max: 52rem;
   --page-pad: clamp(0.75rem, 3vw, 1.5rem);
   --dock-h: 4.25rem;
+  --header-h: 4.1rem;
   --font-body: "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
   --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
@@ -42,16 +43,28 @@ body {
   font-family: var(--font-body);
 }
 
-.smp {
-  min-height: 100vh;
+/* While dragging right scrubber — stop native scroll fight / bounce */
+html.smp--scrubbing,
+html.smp--scrubbing body {
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
-/* —— Sticky: name + font only (기도 선택은 본문에서 스크롤되어 사라짐) —— */
+.smp {
+  min-height: 100vh;
+  /* Room for fixed header — sticky flickered while scrubbing */
+  padding-top: var(--header-h);
+}
+
+/* —— Fixed top bar (name + font) — does not unstick during fast scrub —— */
 .smp__header {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
-  /* Solid bg — backdrop-filter flickers while scrubbing fast */
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: var(--header-h);
+  box-sizing: border-box;
   background: var(--paper);
   border-bottom: 2px solid var(--accent);
   padding: 0.5rem var(--page-pad) 0.55rem;
@@ -278,34 +291,40 @@ body {
   outline-offset: 0;
 }
 
-/* Overlay scrubber — fades in only while scrolling */
+/* Right scrubber — always grabbable, wide hit area (~48px) */
 .scroll-scrubber {
   position: fixed;
-  top: 4.2rem;
-  right: 0.2rem;
-  bottom: calc(var(--dock-h) + 0.35rem);
-  z-index: 15;
-  width: 1.35rem;
+  top: calc(var(--header-h) + 0.25rem);
+  right: 0;
+  bottom: calc(var(--dock-h) + 0.25rem);
+  z-index: 25;
+  width: var(--touch);
   display: flex;
   justify-content: center;
   touch-action: none;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  opacity: 0.72;
+  pointer-events: auto;
+  transition: opacity 0.15s ease;
 }
 
-.scroll-scrubber--visible {
+.scroll-scrubber--active {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .scroll-scrubber__track {
   position: relative;
-  width: 0.55rem;
+  width: 0.7rem;
   height: 100%;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.12);
-  cursor: pointer;
+  background: rgba(0, 0, 0, 0.14);
+  cursor: grab;
+}
+
+.scroll-scrubber--active .scroll-scrubber__track {
+  cursor: grabbing;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .scroll-scrubber__fill {
@@ -314,7 +333,7 @@ body {
   left: 0;
   right: 0;
   border-radius: 999px 999px 0 0;
-  background: rgba(61, 90, 69, 0.45);
+  background: rgba(61, 90, 69, 0.5);
   pointer-events: none;
 }
 
@@ -322,15 +341,14 @@ body {
   position: absolute;
   left: 50%;
   top: 0;
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.55rem;
+  height: 1.55rem;
   border-radius: 50%;
-  border: 2px solid var(--accent);
+  border: 3px solid var(--accent);
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   transform: translateX(-50%);
   pointer-events: none;
-  will-change: top;
 }
 
 .long-options {
