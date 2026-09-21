@@ -1,11 +1,10 @@
-// Right scrubber — drives reading-pane scrollTop via finger delta only.
-// Rejects huge per-frame jumps (viewport/clientY discontinuities → top bounce).
+// Right scrubber — show only while scrolling/dragging; wide hit when visible.
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
   getMaxScroll,
-  getScrollTop,
   getScrollRoot,
+  getScrollTop,
   setScrollTop,
 } from '../lib/scrollRoot'
 import {
@@ -13,6 +12,7 @@ import {
   setScrubberDragLock,
 } from '../lib/useAutoScroll'
 
+const HIDE_AFTER_MS = 1200
 /** Ignore single-frame finger deltas larger than this (px) — usually a coord glitch */
 const MAX_FRAME_DY = 48
 
@@ -30,9 +30,11 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const scrollAtDragRef = useRef(0)
   const lockedMaxRef = useRef(0)
   const lockedTravelRef = useRef(1)
+  const hideTimerRef = useRef(0)
+  const autoScrollOnRef = useRef(autoScrollOn)
   const [needed, setNeeded] = useState(false)
 
-  void autoScrollOn
+  autoScrollOnRef.current = autoScrollOn
 
   function paint(ratio: number) {
     const track = trackRef.current
@@ -49,15 +51,27 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     thumb.style.top = `${y}px`
   }
 
+  function setVisible(on: boolean) {
+    rootRef.current?.classList.toggle('scroll-scrubber--visible', on)
+  }
+
   function setActive(on: boolean) {
     rootRef.current?.classList.toggle('scroll-scrubber--active', on)
+  }
+
+  function showBriefly() {
+    if (draggingRef.current) return
+    setVisible(true)
+    window.clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = window.setTimeout(() => {
+      if (!draggingRef.current) setVisible(false)
+    }, HIDE_AFTER_MS)
   }
 
   function applyDrag(clientY: number) {
     let dy = clientY - lastClientYRef.current
     lastClientYRef.current = clientY
 
-    // Drop discontinuous jumps (mobile visual-viewport / coordinate resets)
     if (Math.abs(dy) > MAX_FRAME_DY) dy = 0
 
     const max = lockedMaxRef.current
@@ -84,6 +98,11 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       if (draggingRef.current) return
       const max = getMaxScroll()
       paint(max <= 0 ? 0 : getScrollTop() / max)
+      if (autoScrollOnRef.current) {
+        setVisible(false)
+        return
+      }
+      showBriefly()
     }
 
     const pane =
@@ -101,16 +120,20 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       pane.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', sync)
       ro?.disconnect()
+      window.clearTimeout(hideTimerRef.current)
       setScrubberDragLock(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (autoScrollOn && !draggingRef.current) setVisible(false)
+  }, [autoScrollOn])
+
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     e.preventDefault()
     e.stopPropagation()
 
-    // Focused name field can scrollIntoView → jump toward top
     const ae = document.activeElement
     if (ae instanceof HTMLElement && ae.closest('.smp__header')) {
       ae.blur()
@@ -129,6 +152,8 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
 
     setScrubberDragLock(true)
     notifyUserScrollIntent()
+    window.clearTimeout(hideTimerRef.current)
+    setVisible(true)
     setActive(true)
     e.currentTarget.setPointerCapture(e.pointerId)
 
@@ -152,6 +177,10 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     setActive(false)
     const max = getMaxScroll()
     paint(max <= 0 ? 0 : getScrollTop() / max)
+    window.clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = window.setTimeout(() => {
+      setVisible(false)
+    }, HIDE_AFTER_MS)
   }
 
   if (!needed) return null

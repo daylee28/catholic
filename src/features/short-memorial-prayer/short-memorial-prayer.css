@@ -295,7 +295,7 @@ body {
   outline-offset: 0;
 }
 
-/* Right scrubber — always grabbable, wide hit area (~48px) */
+/* Right scrubber — hidden at rest; wide hit when visible */
 .scroll-scrubber {
   position: fixed;
   top: calc(var(--header-h) + 0.25rem);
@@ -308,9 +308,14 @@ body {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
-  opacity: 0.72;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.scroll-scrubber--visible {
+  opacity: 0.9;
   pointer-events: auto;
-  transition: opacity 0.15s ease;
 }
 
 .scroll-scrubber--active {
