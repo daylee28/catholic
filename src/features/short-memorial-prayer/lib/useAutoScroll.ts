@@ -3,11 +3,9 @@
 import { useEffect, useRef } from 'react'
 
 const SPEED_PX_PER_SEC: Record<number, number> = {
-  1: 18,
-  2: 28,
-  3: 42,
-  4: 60,
-  5: 85,
+  1: 22,
+  2: 40,
+  3: 70,
 }
 
 const RESUME_AFTER_MS = 1800

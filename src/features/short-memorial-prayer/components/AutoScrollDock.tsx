@@ -1,6 +1,6 @@
-// Compact bottom dock — checkbox + speed slider on one thin row
+// Compact bottom dock — checkbox + 느림/보통/빠름
 
-import { SCROLL_SPEED_LABELS } from '../types'
+import { SCROLL_SPEED_LEVELS, SCROLL_SPEED_LABELS } from '../types'
 
 type AutoScrollDockProps = {
   on: boolean
@@ -27,25 +27,28 @@ export function AutoScrollDock({
           <span>자동</span>
         </label>
 
-        <input
-          type="range"
-          className="scroll-dock__range"
-          min={1}
-          max={5}
-          step={1}
-          value={speed}
-          disabled={!on}
-          aria-label={`스크롤 속도 ${SCROLL_SPEED_LABELS[speed]}`}
-          onChange={(e) => onSpeedChange(Number(e.target.value))}
-        />
-
-        <span
-          className={
-            on ? 'scroll-dock__speed-label' : 'scroll-dock__speed-label is-off'
-          }
+        <div
+          className={on ? 'scroll-dock__speeds' : 'scroll-dock__speeds is-disabled'}
+          role="group"
+          aria-label="스크롤 속도"
         >
-          {on ? SCROLL_SPEED_LABELS[speed] : '꺼짐'}
-        </span>
+          {SCROLL_SPEED_LEVELS.map((level) => (
+            <button
+              key={level}
+              type="button"
+              disabled={!on}
+              className={
+                speed === level
+                  ? 'scroll-dock__speed-btn scroll-dock__speed-btn--active'
+                  : 'scroll-dock__speed-btn'
+              }
+              aria-pressed={speed === level}
+              onClick={() => onSpeedChange(level)}
+            >
+              {SCROLL_SPEED_LABELS[level]}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -52,9 +52,13 @@ function clampFont(size: number): number {
 }
 
 function clampSpeed(speed: number): number {
+  const rounded = Math.round(speed)
+  // migrate old 1–5 prefs into 1–3
+  if (rounded >= 4) return 3
+  if (rounded <= 0) return AUTO_SCROLL_SPEED_DEFAULT
   return Math.min(
     AUTO_SCROLL_SPEED_MAX,
-    Math.max(AUTO_SCROLL_SPEED_MIN, Math.round(speed)),
+    Math.max(AUTO_SCROLL_SPEED_MIN, rounded),
   )
 }
 

@@ -529,8 +529,8 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .scroll-dock__speed-label {
-    min-width: 3rem;
-    font-size: 0.75rem;
+  .scroll-dock__speed-btn {
+    font-size: 0.82rem;
+    padding: 0.2rem 0.2rem;
   }
 }
