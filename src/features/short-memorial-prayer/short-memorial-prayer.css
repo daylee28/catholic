@@ -16,6 +16,7 @@
   --touch: 48px;
   --read-max: 52rem;
   --page-pad: clamp(0.75rem, 3vw, 1.5rem);
+  --dock-h: 4.75rem;
   --font-body: "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
   --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
@@ -45,28 +46,27 @@ body {
   min-height: 100vh;
 }
 
-/* —— Sticky: only prayer switch + font + name —— */
+/* —— Sticky: name + font only (기도 선택은 본문에서 스크롤되어 사라짐) —— */
 .smp__header {
   position: sticky;
   top: 0;
   z-index: 10;
   background: rgba(247, 243, 234, 0.97);
   border-bottom: 2px solid var(--accent);
-  padding: 0.55rem var(--page-pad) 0.65rem;
+  padding: 0.5rem var(--page-pad) 0.55rem;
   backdrop-filter: blur(6px);
 }
 
 .smp__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.55rem;
   max-width: var(--read-max);
-  margin: 0 auto 0.45rem;
+  margin: 0 auto;
 }
 
 .smp__page-title {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.65rem;
   font-family: var(--font-ui);
   font-size: 1.2rem;
   font-weight: 700;
@@ -77,23 +77,22 @@ body {
 .smp__main {
   max-width: var(--read-max);
   margin: 0 auto;
-  padding: 1rem var(--page-pad) 3.5rem;
+  padding: 1rem var(--page-pad) calc(var(--dock-h) + 2.5rem);
   font-size: var(--prayer-font-size);
   line-height: 1.8;
 }
 
-/* Prayer picker — compact segmented */
+/* Prayer picker — in main, scrolls away */
 .prayer-picker {
   display: flex;
-  flex: 1;
-  gap: 0.35rem;
-  min-width: 0;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
 }
 
 .prayer-picker__btn {
   flex: 1;
   min-height: var(--touch);
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.5rem;
   border: 2px solid var(--accent);
   border-radius: 8px;
   background: #fff;
@@ -109,13 +108,13 @@ body {
   color: #fff;
 }
 
-/* Name — one row */
+/* Name — grows in sticky row */
 .name-input {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  max-width: var(--read-max);
-  margin: 0 auto;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-ui);
 }
 
@@ -169,25 +168,63 @@ body {
   font-size: 0.9rem;
 }
 
-/* Reading aids (auto-scroll etc.) — in main, not sticky */
+/* Reading aids — wake lock only (scrolls away) */
 .reading-aids {
   margin-bottom: 1rem;
-  padding: 0.75rem 0.8rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid #cbbfa8;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.55);
   font-family: var(--font-ui);
 }
 
-.reading-aids__row {
+.reading-aids__wake {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  min-height: 44px;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
-.reading-aids__main {
-  flex: 1;
+.reading-aids__wake input {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.reading-aids__hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* Fixed bottom: auto-scroll always visible */
+.scroll-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: 0.55rem var(--page-pad) calc(0.55rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(247, 243, 234, 0.98);
+  border-top: 2px solid var(--accent);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.scroll-dock__inner {
+  max-width: var(--read-max);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.scroll-dock__toggle {
   min-height: var(--touch);
-  padding: 0.45rem 0.75rem;
+  padding: 0.4rem 0.9rem;
   border: 2px solid var(--accent);
   border-radius: 8px;
   background: #fff;
@@ -196,65 +233,55 @@ body {
   font-size: 1.05rem;
   font-weight: 700;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.reading-aids__main--on {
+.scroll-dock__toggle--on {
   background: var(--accent);
   color: #fff;
 }
 
-.reading-aids__speed {
+.scroll-dock__speed {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.55rem;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
-.reading-aids__speed-label {
-  font-weight: 700;
-  font-size: 0.95rem;
-  margin-right: 0.15rem;
-}
-
-.reading-aids__chip {
-  min-height: 44px;
-  padding: 0.35rem 0.55rem;
+.scroll-dock__chip {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0.2rem;
   border: 2px solid var(--accent);
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
 }
 
-.reading-aids__chip--active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+.scroll-dock__chip--active {
+  background: var(--accent);
+  color: #fff;
 }
 
-.reading-aids__hint {
-  margin: 0.5rem 0 0;
-  font-size: 0.88rem;
-  color: #555;
-  line-height: 1.4;
-}
-
-.reading-aids__wake {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: var(--touch);
-  margin-top: 0.35rem;
-  font-size: 1rem;
+.scroll-dock__speed-text {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
   font-weight: 600;
+  color: #444;
+  margin-left: 0.2rem;
 }
 
-.reading-aids__wake input {
-  width: 1.35rem;
-  height: 1.35rem;
+.scroll-dock__hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: #555;
 }
 
 .long-options {

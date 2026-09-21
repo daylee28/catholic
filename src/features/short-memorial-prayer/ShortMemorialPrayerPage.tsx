@@ -2,6 +2,7 @@
 // Plan: docs/plan/PLAN-000001_init/plan.md
 
 import { useEffect, useRef, useState } from 'react'
+import { AutoScrollDock } from './components/AutoScrollDock'
 import { FontZoom } from './components/FontZoom'
 import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
@@ -100,27 +101,24 @@ export function ShortMemorialPrayerPage() {
     <div className="smp">
       <header className="smp__header">
         <div className="smp__top">
-          <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
+          <NameInput
+            value={prefs.deceasedName}
+            onChange={(deceasedName) => updatePrefs({ deceasedName })}
+          />
           <FontZoom
             fontSizePx={prefs.fontSizePx}
             step={FONT_SIZE_STEP}
             onChange={(fontSizePx) => updatePrefs({ fontSizePx })}
           />
         </div>
-        <NameInput
-          value={prefs.deceasedName}
-          onChange={(deceasedName) => updatePrefs({ deceasedName })}
-        />
       </header>
 
       <main className="smp__main">
         <h1 className="smp__page-title">{prayer.title}</h1>
 
+        <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
+
         <ReadingAids
-          autoScrollOn={prefs.autoScrollOn}
-          autoScrollSpeed={prefs.autoScrollSpeed}
-          onAutoScrollChange={(autoScrollOn) => updatePrefs({ autoScrollOn })}
-          onSpeedChange={(autoScrollSpeed) => updatePrefs({ autoScrollSpeed })}
           wakeSupported={wakeSupported}
           wakeLockOn={prefs.wakeLockOn}
           onWakeLockChange={(wakeLockOn) => updatePrefs({ wakeLockOn })}
@@ -175,6 +173,13 @@ export function ShortMemorialPrayerPage() {
           </p>
         </footer>
       </main>
+
+      <AutoScrollDock
+        on={prefs.autoScrollOn}
+        speed={prefs.autoScrollSpeed}
+        onToggle={(autoScrollOn) => updatePrefs({ autoScrollOn })}
+        onSpeedChange={(autoScrollSpeed) => updatePrefs({ autoScrollSpeed })}
+      />
     </div>
   )
 }
