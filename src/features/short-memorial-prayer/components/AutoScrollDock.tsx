@@ -1,4 +1,4 @@
-// Fixed bottom dock — auto-scroll + speed slider
+// Compact bottom dock — checkbox + speed slider on one thin row
 
 import { SCROLL_SPEED_LABELS } from '../types'
 
@@ -18,44 +18,34 @@ export function AutoScrollDock({
   return (
     <div className="scroll-dock" role="region" aria-label="자동 스크롤">
       <div className="scroll-dock__inner">
-        <button
-          type="button"
-          className={
-            on
-              ? 'scroll-dock__toggle scroll-dock__toggle--on'
-              : 'scroll-dock__toggle'
-          }
-          aria-pressed={on}
-          onClick={() => onToggle(!on)}
-        >
-          자동 스크롤 {on ? '켜짐' : '꺼짐'}
-        </button>
+        <label className="scroll-dock__check">
+          <input
+            type="checkbox"
+            checked={on}
+            onChange={(e) => onToggle(e.target.checked)}
+          />
+          <span>자동</span>
+        </label>
 
-        {on ? (
-          <label className="scroll-dock__slider">
-            <span className="scroll-dock__slider-ends">
-              <span>느림</span>
-              <span className="scroll-dock__slider-value">
-                {SCROLL_SPEED_LABELS[speed]}
-              </span>
-              <span>빠름</span>
-            </span>
-            <input
-              type="range"
-              className="scroll-dock__range"
-              min={1}
-              max={5}
-              step={1}
-              value={speed}
-              aria-label="자동 스크롤 속도"
-              onChange={(e) => onSpeedChange(Number(e.target.value))}
-            />
-          </label>
-        ) : (
-          <p className="scroll-dock__hint">
-            켜면 천천히 내려갑니다 · 오른쪽 바로 위치 이동
-          </p>
-        )}
+        <input
+          type="range"
+          className="scroll-dock__range"
+          min={1}
+          max={5}
+          step={1}
+          value={speed}
+          disabled={!on}
+          aria-label={`스크롤 속도 ${SCROLL_SPEED_LABELS[speed]}`}
+          onChange={(e) => onSpeedChange(Number(e.target.value))}
+        />
+
+        <span
+          className={
+            on ? 'scroll-dock__speed-label' : 'scroll-dock__speed-label is-off'
+          }
+        >
+          {on ? SCROLL_SPEED_LABELS[speed] : '꺼짐'}
+        </span>
       </div>
     </div>
   )

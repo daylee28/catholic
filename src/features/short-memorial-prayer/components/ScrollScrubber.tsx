@@ -1,6 +1,8 @@
-// Right-edge reading scrubber — drag to jump through long prayers
+// Overlay scrubber — only visible while the user is scrolling
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
+
+const HIDE_AFTER_MS = 900
 
 function getScrollMetrics() {
   const max = Math.max(
@@ -15,8 +17,10 @@ function getScrollMetrics() {
 export function ScrollScrubber() {
   const trackRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
+  const hideTimerRef = useRef(0)
   const [ratio, setRatio] = useState(0)
   const [needed, setNeeded] = useState(false)
+  const [visible, setVisible] = useState(false)
 
   const refresh = useCallback(() => {
     const m = getScrollMetrics()
@@ -24,18 +28,35 @@ export function ScrollScrubber() {
     setNeeded(m.max > 40)
   }, [])
 
+  const showBriefly = useCallback(() => {
+    if (draggingRef.current) return
+    setVisible(true)
+    window.clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = window.setTimeout(() => {
+      if (!draggingRef.current) setVisible(false)
+    }, HIDE_AFTER_MS)
+  }, [])
+
   useEffect(() => {
     refresh()
-    window.addEventListener('scroll', refresh, { passive: true })
+
+    const onScroll = () => {
+      refresh()
+      showBriefly()
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', refresh)
     const ro = new ResizeObserver(refresh)
     ro.observe(document.documentElement)
+
     return () => {
-      window.removeEventListener('scroll', refresh)
+      window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', refresh)
       ro.disconnect()
+      window.clearTimeout(hideTimerRef.current)
     }
-  }, [refresh])
+  }, [refresh, showBriefly])
 
   const jumpToClientY = useCallback((clientY: number) => {
     const track = trackRef.current
@@ -53,6 +74,8 @@ export function ScrollScrubber() {
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     draggingRef.current = true
+    setVisible(true)
+    window.clearTimeout(hideTimerRef.current)
     e.currentTarget.setPointerCapture(e.pointerId)
     jumpToClientY(e.clientY)
   }
@@ -67,39 +90,23 @@ export function ScrollScrubber() {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
+    window.clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = window.setTimeout(() => {
+      setVisible(false)
+    }, HIDE_AFTER_MS)
   }
 
   if (!needed) return null
 
   return (
     <div
-      className="scroll-scrubber"
+      className={
+        visible
+          ? 'scroll-scrubber scroll-scrubber--visible'
+          : 'scroll-scrubber'
+      }
+      aria-hidden={!visible}
       aria-label="읽기 위치"
-      role="slider"
-      aria-orientation="vertical"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(ratio * 100)}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        const max = Math.max(
-          0,
-          document.documentElement.scrollHeight - window.innerHeight,
-        )
-        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-          e.preventDefault()
-          window.scrollBy({ top: window.innerHeight * 0.35 })
-        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-          e.preventDefault()
-          window.scrollBy({ top: -window.innerHeight * 0.35 })
-        } else if (e.key === 'Home') {
-          e.preventDefault()
-          window.scrollTo({ top: 0 })
-        } else if (e.key === 'End') {
-          e.preventDefault()
-          window.scrollTo({ top: max })
-        }
-      }}
     >
       <div
         ref={trackRef}
@@ -118,7 +125,6 @@ export function ScrollScrubber() {
           style={{ top: `${ratio * 100}%` }}
         />
       </div>
-      <span className="scroll-scrubber__label">위치</span>
     </div>
   )
 }
