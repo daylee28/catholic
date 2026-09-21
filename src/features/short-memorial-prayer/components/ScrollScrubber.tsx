@@ -1,7 +1,11 @@
-// Overlay scrubber — manual drag only; rAF-throttled scroll to avoid top flicker
+// Overlay scrubber — relative drag (finger delta), not absolute track mapping.
+// Absolute mapping jumped to top when fixed-bar rect shifted mid-scroll.
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
-import { notifyUserScrollIntent } from '../lib/useAutoScroll'
+import {
+  notifyUserScrollIntent,
+  setScrubberDragLock,
+} from '../lib/useAutoScroll'
 
 const HIDE_AFTER_MS = 1000
 
@@ -30,7 +34,8 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const fillRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
-  const dragOffsetRef = useRef(0)
+  const dragStartClientYRef = useRef(0)
+  const dragStartScrollYRef = useRef(0)
   const hideTimerRef = useRef(0)
   const userInteractedUntilRef = useRef(0)
   const autoScrollOnRef = useRef(autoScrollOn)
@@ -74,11 +79,19 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     const top = pendingTopRef.current
     if (top === null) return
     pendingTopRef.current = null
-    // Single scroll API — avoid documentElement.scrollTop + window fighting
-    window.scrollTo(0, top)
+    const el = document.scrollingElement || document.documentElement
+    el.scrollTop = top
   }
 
-  function jumpToClientY(clientY: number) {
+  function scheduleScroll(top: number) {
+    pendingTopRef.current = top
+    if (!scrollRafRef.current) {
+      scrollRafRef.current = requestAnimationFrame(flushScroll)
+    }
+  }
+
+  /** Jump page + thumb to absolute track position (track click only). */
+  function jumpAbsolute(clientY: number) {
     const track = trackRef.current
     const thumb = thumbRef.current
     if (!track) return
@@ -86,16 +99,35 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     const rect = track.getBoundingClientRect()
     const thumbH = thumb?.offsetHeight || 14
     const travel = Math.max(1, rect.height - thumbH)
-    const y = clientY - rect.top - dragOffsetRef.current
+    const y = clientY - rect.top - thumbH / 2
     const ratio = Math.min(1, Math.max(0, y / travel))
     const max = maxScrollY()
+    const top = ratio * max
 
-    // Thumb follows finger immediately; page scroll coalesced to 1/frame
     paint(ratio)
-    pendingTopRef.current = ratio * max
-    if (!scrollRafRef.current) {
-      scrollRafRef.current = requestAnimationFrame(flushScroll)
-    }
+    dragStartClientYRef.current = clientY
+    dragStartScrollYRef.current = top
+    scheduleScroll(top)
+  }
+
+  /** Move by finger delta from drag start — stable while chrome/layout shifts. */
+  function dragRelative(clientY: number) {
+    const track = trackRef.current
+    const thumb = thumbRef.current
+    if (!track) return
+
+    const thumbH = thumb?.offsetHeight || 14
+    const travel = Math.max(1, track.clientHeight - thumbH)
+    const max = maxScrollY()
+    const deltaRatio = (clientY - dragStartClientYRef.current) / travel
+    const top = Math.min(
+      max,
+      Math.max(0, dragStartScrollYRef.current + deltaRatio * max),
+    )
+    const ratio = max <= 0 ? 0 : top / max
+
+    paint(ratio)
+    scheduleScroll(top)
   }
 
   useEffect(() => {
@@ -135,6 +167,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       window.removeEventListener('resize', syncNeeded)
       window.clearTimeout(hideTimerRef.current)
       if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current)
+      setScrubberDragLock(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -148,6 +181,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     e.preventDefault()
     draggingRef.current = true
+    setScrubberDragLock(true)
     notifyUserScrollIntent()
     userInteractedUntilRef.current = Date.now() + HIDE_AFTER_MS
     setVisible(true)
@@ -155,29 +189,32 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     e.currentTarget.setPointerCapture(e.pointerId)
 
     const thumb = thumbRef.current
-    const thumbH = thumb?.offsetHeight || 14
+    let onThumb = false
     if (thumb) {
       const thumbRect = thumb.getBoundingClientRect()
-      const onThumb =
+      onThumb =
         e.clientY >= thumbRect.top && e.clientY <= thumbRect.bottom
-      dragOffsetRef.current = onThumb
-        ? e.clientY - thumbRect.top
-        : thumbH / 2
-    } else {
-      dragOffsetRef.current = thumbH / 2
     }
 
-    jumpToClientY(e.clientY)
+    if (onThumb) {
+      // Grab thumb: keep current scroll, move relatively from here
+      dragStartClientYRef.current = e.clientY
+      dragStartScrollYRef.current = currentScrollY()
+      paint(scrollRatio())
+    } else {
+      // Empty track: jump once, then relative from that point
+      jumpAbsolute(e.clientY)
+    }
   }
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!draggingRef.current) return
-    notifyUserScrollIntent()
-    jumpToClientY(e.clientY)
+    dragRelative(e.clientY)
   }
 
   function onPointerUp(e: PointerEvent<HTMLDivElement>) {
     draggingRef.current = false
+    setScrubberDragLock(false)
     if (scrollRafRef.current) {
       cancelAnimationFrame(scrollRafRef.current)
       flushScroll()

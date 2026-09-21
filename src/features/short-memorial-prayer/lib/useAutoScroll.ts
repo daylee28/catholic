@@ -1,4 +1,4 @@
-// Auto-scroll — pause only on real user input (not our own scroll events)
+// Auto-scroll — pause on user input; hard-lock while scrubber dragging
 
 import { useEffect, useRef } from 'react'
 
@@ -10,8 +10,14 @@ const SPEED_PX_PER_SEC: Record<number, number> = {
 
 const RESUME_AFTER_MS = 1800
 
-/** Scrubber / other UI can pause auto-scroll without being wheel/touch */
 export const USER_SCROLL_INTENT_EVENT = 'prayer-user-scroll-intent'
+
+/** True while user is dragging the scrubber — auto-scroll must not move at all */
+let scrubberDragLock = false
+
+export function setScrubberDragLock(locked: boolean) {
+  scrubberDragLock = locked
+}
 
 export function notifyUserScrollIntent() {
   window.dispatchEvent(new Event(USER_SCROLL_INTENT_EVENT))
@@ -47,7 +53,7 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
     const tick = (ts: number) => {
       raf = requestAnimationFrame(tick)
 
-      if (Date.now() < pausedUntilRef.current) {
+      if (scrubberDragLock || Date.now() < pausedUntilRef.current) {
         lastTsRef.current = 0
         return
       }
