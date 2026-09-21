@@ -1,5 +1,5 @@
-// Overlay scrubber — relative drag (finger delta), not absolute track mapping.
-// Absolute mapping jumped to top when fixed-bar rect shifted mid-scroll.
+// Right-edge scrubber: always relative drag from current scroll.
+// Never absolute jump via getBoundingClientRect (that caused top↔down bounce).
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
@@ -90,27 +90,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     }
   }
 
-  /** Jump page + thumb to absolute track position (track click only). */
-  function jumpAbsolute(clientY: number) {
-    const track = trackRef.current
-    const thumb = thumbRef.current
-    if (!track) return
-
-    const rect = track.getBoundingClientRect()
-    const thumbH = thumb?.offsetHeight || 14
-    const travel = Math.max(1, rect.height - thumbH)
-    const y = clientY - rect.top - thumbH / 2
-    const ratio = Math.min(1, Math.max(0, y / travel))
-    const max = maxScrollY()
-    const top = ratio * max
-
-    paint(ratio)
-    dragStartClientYRef.current = clientY
-    dragStartScrollYRef.current = top
-    scheduleScroll(top)
-  }
-
-  /** Move by finger delta from drag start — stable while chrome/layout shifts. */
+  /** Finger delta only — no absolute track math (avoids jump-to-top). */
   function dragRelative(clientY: number) {
     const track = trackRef.current
     const thumb = thumbRef.current
@@ -188,23 +168,10 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     window.clearTimeout(hideTimerRef.current)
     e.currentTarget.setPointerCapture(e.pointerId)
 
-    const thumb = thumbRef.current
-    let onThumb = false
-    if (thumb) {
-      const thumbRect = thumb.getBoundingClientRect()
-      onThumb =
-        e.clientY >= thumbRect.top && e.clientY <= thumbRect.bottom
-    }
-
-    if (onThumb) {
-      // Grab thumb: keep current scroll, move relatively from here
-      dragStartClientYRef.current = e.clientY
-      dragStartScrollYRef.current = currentScrollY()
-      paint(scrollRatio())
-    } else {
-      // Empty track: jump once, then relative from that point
-      jumpAbsolute(e.clientY)
-    }
+    // Always relative from current page scroll — never jump via track absolute Y
+    dragStartClientYRef.current = e.clientY
+    dragStartScrollYRef.current = currentScrollY()
+    paint(scrollRatio())
   }
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
