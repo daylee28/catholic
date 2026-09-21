@@ -1,5 +1,5 @@
 /* Spec: docs/spec/features/short-memorial-prayer/short-memorial-prayer.md
-   FR-3, FR-5 — 노인 친화 UI */
+   FR-3, FR-5 — 노인 친화 UI (컴팩트 sticky + 넓은 본문) */
 
 :root {
   --prayer-font-size: 22px;
@@ -13,9 +13,9 @@
   --mark-odd: #3d5a45;
   --mark-even: #5a4a3d;
   --empty-slot: #c45c26;
-  --header-h: auto;
   --touch: 48px;
-  --read-max: 38rem;
+  --read-max: 52rem;
+  --page-pad: clamp(0.75rem, 3vw, 1.5rem);
   --font-body: "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
   --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
@@ -45,72 +45,63 @@ body {
   min-height: 100vh;
 }
 
+/* —— Sticky: only prayer switch + font + name —— */
 .smp__header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(247, 243, 234, 0.96);
+  background: rgba(247, 243, 234, 0.97);
   border-bottom: 2px solid var(--accent);
-  padding: 0.75rem 1rem 0.9rem;
+  padding: 0.55rem var(--page-pad) 0.65rem;
   backdrop-filter: blur(6px);
 }
 
-.smp__header-row {
+.smp__top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.65rem;
   max-width: var(--read-max);
-  margin: 0 auto 0.65rem;
+  margin: 0 auto 0.45rem;
 }
 
-.smp__title {
-  margin: 0;
+.smp__page-title {
+  margin: 0 0 0.85rem;
   font-family: var(--font-ui);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--accent);
 }
 
 .smp__main {
   max-width: var(--read-max);
   margin: 0 auto;
-  padding: 1rem 1rem 3rem;
+  padding: 1rem var(--page-pad) 3.5rem;
   font-size: var(--prayer-font-size);
-  line-height: 1.75;
+  line-height: 1.8;
 }
 
-.name-input {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-width: var(--read-max);
-  margin: 0.55rem auto 0;
-  font-family: var(--font-ui);
-}
-
+/* Prayer picker — compact segmented */
 .prayer-picker {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  max-width: var(--read-max);
-  margin: 0 auto;
+  display: flex;
+  flex: 1;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
 .prayer-picker__btn {
-  min-height: calc(var(--touch) + 0.5rem);
-  padding: 0.55rem 0.5rem;
+  flex: 1;
+  min-height: var(--touch);
+  padding: 0.35rem 0.5rem;
   border: 2px solid var(--accent);
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
   font-family: var(--font-ui);
-  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 700;
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
 }
 
 .prayer-picker__btn--active {
@@ -118,15 +109,152 @@ body {
   color: #fff;
 }
 
-.prayer-picker__title {
-  font-size: 1.05rem;
+/* Name — one row */
+.name-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: var(--read-max);
+  margin: 0 auto;
+  font-family: var(--font-ui);
+}
+
+.name-input__label {
+  flex-shrink: 0;
+  font-size: 1rem;
   font-weight: 700;
 }
 
-.prayer-picker__desc {
-  font-size: 0.8rem;
-  opacity: 0.85;
-  line-height: 1.3;
+.name-input__field {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0.45rem 0.7rem;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-family: inherit;
+  background: #fff;
+}
+
+.font-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.font-zoom__btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.font-zoom__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.font-zoom__value {
+  min-width: 1.75rem;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+
+/* Reading aids (auto-scroll etc.) — in main, not sticky */
+.reading-aids {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid #cbbfa8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-ui);
+}
+
+.reading-aids__row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reading-aids__main {
+  flex: 1;
+  min-height: var(--touch);
+  padding: 0.45rem 0.75rem;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reading-aids__main--on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.reading-aids__speed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.reading-aids__speed-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-right: 0.15rem;
+}
+
+.reading-aids__chip {
+  min-height: 44px;
+  padding: 0.35rem 0.55rem;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reading-aids__chip--active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.reading-aids__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.reading-aids__wake {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--touch);
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.reading-aids__wake input {
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .long-options {
@@ -187,70 +315,6 @@ body {
   color: #fff;
 }
 
-.name-input__label {
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.name-input__field {
-  min-height: var(--touch);
-  padding: 0.55rem 0.75rem;
-  border: 2px solid var(--accent);
-  border-radius: 6px;
-  font-size: 1.15rem;
-  font-family: inherit;
-  background: #fff;
-}
-
-.font-zoom {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
-}
-
-.font-zoom__btn {
-  min-width: var(--touch);
-  min-height: var(--touch);
-  border: 2px solid var(--accent);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.font-zoom__btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.font-zoom__value {
-  min-width: 2rem;
-  text-align: center;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-}
-
-.wake-lock {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: var(--read-max);
-  margin: 0.65rem auto 0;
-  min-height: var(--touch);
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.wake-lock input {
-  width: 1.35rem;
-  height: 1.35rem;
-}
-
 .situation-picker {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -297,14 +361,14 @@ body {
 
 .prayer-line {
   display: flex;
-  gap: 0.45rem;
-  margin: 0 0 0.65rem;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
 }
 
 .prayer-line__mark {
   flex-shrink: 0;
   font-weight: 700;
-  width: 1.2em;
+  width: 1.25em;
 }
 
 .prayer-line--leader .prayer-line__mark {
@@ -321,6 +385,11 @@ body {
 
 .prayer-line--even .prayer-line__mark {
   color: var(--mark-even);
+}
+
+.prayer-line__text {
+  flex: 1;
+  min-width: 0;
 }
 
 .prayer-name {
@@ -355,16 +424,13 @@ body {
   margin-top: 0.35rem;
 }
 
-@media (max-width: 420px) {
-  .smp__header-row {
-    flex-wrap: wrap;
-  }
-
-  .prayer-picker {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 480px) {
   .situation-picker {
     grid-template-columns: 1fr;
+  }
+
+  .reading-aids__chip {
+    font-size: 0.82rem;
+    padding: 0.3rem 0.4rem;
   }
 }

@@ -9,15 +9,16 @@ type NameInputProps = {
 export function NameInput({ value, onChange }: NameInputProps) {
   return (
     <label className="name-input">
-      <span className="name-input__label">고인 이름</span>
+      <span className="name-input__label">이름</span>
       <input
         className="name-input__field"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="예: 김영희"
+        placeholder="고인 이름 (예: 김영희)"
         autoComplete="off"
         enterKeyHint="done"
+        aria-label="고인 이름"
       />
     </label>
   )

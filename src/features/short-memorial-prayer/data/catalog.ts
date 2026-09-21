@@ -7,11 +7,13 @@ export const PRAYER_CATALOG: PrayerCatalogItem[] = [
   {
     id: 'short',
     shortTitle: '짧은 위령기도',
+    compactTitle: '짧은',
     description: '위령기도 2 · 짧게 바칠 때',
   },
   {
     id: 'long',
     shortTitle: '긴 위령기도',
+    compactTitle: '긴',
     description: '위령기도 1 · 성인호칭·시편 포함',
   },
 ]

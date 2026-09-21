@@ -7,8 +7,8 @@ import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
 import { PrayerPicker } from './components/PrayerPicker'
+import { ReadingAids } from './components/ReadingAids'
 import { SituationPicker } from './components/SituationPicker'
-import { WakeLockToggle } from './components/WakeLockToggle'
 import { getPrayerDocument } from './data/catalog'
 import {
   isWakeLockSupported,
@@ -16,6 +16,7 @@ import {
   requestWakeLock,
 } from './lib/wakeLock'
 import { loadPrefs, savePrefs } from './lib/prefs'
+import { useAutoScroll } from './lib/useAutoScroll'
 import {
   FONT_SIZE_STEP,
   type AfterLitanyId,
@@ -31,6 +32,8 @@ export function ShortMemorialPrayerPage() {
   const wakeRef = useRef<Awaited<ReturnType<typeof requestWakeLock>>>(null)
   const wakeSupported = isWakeLockSupported()
   const prayer = getPrayerDocument(prefs.prayerId)
+
+  useAutoScroll(prefs.autoScrollOn, prefs.autoScrollSpeed)
 
   useEffect(() => {
     savePrefs(prefs)
@@ -96,27 +99,33 @@ export function ShortMemorialPrayerPage() {
   return (
     <div className="smp">
       <header className="smp__header">
-        <div className="smp__header-row">
-          <h1 className="smp__title">{prayer.title}</h1>
+        <div className="smp__top">
+          <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
           <FontZoom
             fontSizePx={prefs.fontSizePx}
             step={FONT_SIZE_STEP}
             onChange={(fontSizePx) => updatePrefs({ fontSizePx })}
           />
         </div>
-        <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
         <NameInput
           value={prefs.deceasedName}
           onChange={(deceasedName) => updatePrefs({ deceasedName })}
         />
-        <WakeLockToggle
-          supported={wakeSupported}
-          enabled={prefs.wakeLockOn}
-          onChange={(wakeLockOn) => updatePrefs({ wakeLockOn })}
-        />
       </header>
 
       <main className="smp__main">
+        <h1 className="smp__page-title">{prayer.title}</h1>
+
+        <ReadingAids
+          autoScrollOn={prefs.autoScrollOn}
+          autoScrollSpeed={prefs.autoScrollSpeed}
+          onAutoScrollChange={(autoScrollOn) => updatePrefs({ autoScrollOn })}
+          onSpeedChange={(autoScrollSpeed) => updatePrefs({ autoScrollSpeed })}
+          wakeSupported={wakeSupported}
+          wakeLockOn={prefs.wakeLockOn}
+          onWakeLockChange={(wakeLockOn) => updatePrefs({ wakeLockOn })}
+        />
+
         {prayer.hasShortSituations ? (
           <SituationPicker
             value={prefs.situationId}

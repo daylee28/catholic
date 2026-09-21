@@ -3,6 +3,9 @@
 
 import { isPrayerId } from '../data/catalog'
 import {
+  AUTO_SCROLL_SPEED_DEFAULT,
+  AUTO_SCROLL_SPEED_MAX,
+  AUTO_SCROLL_SPEED_MIN,
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
@@ -23,6 +26,8 @@ const DEFAULT_PREFS: AppPrefs = {
   litanyOn: true,
   afterLitanyId: 'visitor',
   wakeLockOn: false,
+  autoScrollOn: false,
+  autoScrollSpeed: AUTO_SCROLL_SPEED_DEFAULT,
 }
 
 function isSituationId(value: unknown): value is SituationId {
@@ -44,6 +49,13 @@ function isAfterLitanyId(value: unknown): value is AfterLitanyId {
 
 function clampFont(size: number): number {
   return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, size))
+}
+
+function clampSpeed(speed: number): number {
+  return Math.min(
+    AUTO_SCROLL_SPEED_MAX,
+    Math.max(AUTO_SCROLL_SPEED_MIN, Math.round(speed)),
+  )
 }
 
 export function loadPrefs(): AppPrefs {
@@ -69,6 +81,11 @@ export function loadPrefs(): AppPrefs {
         ? parsed.afterLitanyId
         : 'visitor',
       wakeLockOn: Boolean(parsed.wakeLockOn),
+      autoScrollOn: Boolean(parsed.autoScrollOn),
+      autoScrollSpeed:
+        typeof parsed.autoScrollSpeed === 'number'
+          ? clampSpeed(parsed.autoScrollSpeed)
+          : AUTO_SCROLL_SPEED_DEFAULT,
     }
   } catch {
     return { ...DEFAULT_PREFS }
@@ -85,6 +102,8 @@ export function savePrefs(prefs: AppPrefs): void {
     litanyOn: prefs.litanyOn,
     afterLitanyId: prefs.afterLitanyId,
     wakeLockOn: prefs.wakeLockOn,
+    autoScrollOn: prefs.autoScrollOn,
+    autoScrollSpeed: clampSpeed(prefs.autoScrollSpeed),
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
 }

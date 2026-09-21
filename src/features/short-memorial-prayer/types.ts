@@ -63,6 +63,8 @@ export interface PrayerDocument {
 export interface PrayerCatalogItem {
   id: PrayerId
   shortTitle: string
+  /** Compact label for sticky header */
+  compactTitle: string
   description: string
 }
 
@@ -75,12 +77,27 @@ export interface AppPrefs {
   litanyOn: boolean
   afterLitanyId: AfterLitanyId
   wakeLockOn: boolean
+  autoScrollOn: boolean
+  /** 1(느림) ~ 5(빠름) */
+  autoScrollSpeed: number
 }
 
 export const FONT_SIZE_MIN = 16
 export const FONT_SIZE_MAX = 40
 export const FONT_SIZE_DEFAULT = 22
 export const FONT_SIZE_STEP = 2
+
+export const AUTO_SCROLL_SPEED_MIN = 1
+export const AUTO_SCROLL_SPEED_MAX = 5
+export const AUTO_SCROLL_SPEED_DEFAULT = 2
+
+export const SCROLL_SPEED_LABELS: Record<number, string> = {
+  1: '아주 느림',
+  2: '느림',
+  3: '보통',
+  4: '빠름',
+  5: '아주 빠름',
+}
 
 export const SITUATION_LABELS: Record<SituationId, string> = {
   funeral: '사망일~장례',

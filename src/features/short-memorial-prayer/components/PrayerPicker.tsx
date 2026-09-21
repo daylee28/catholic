@@ -1,5 +1,5 @@
 // Spec: docs/spec/features/short-memorial-prayer/short-memorial-prayer.md
-// 기도 선택 — 지금은 2개, 카탈로그만 늘리면 확장 가능
+// 기도 선택 — compact sticky labels
 
 import { PRAYER_CATALOG } from '../data/catalog'
 import type { PrayerId } from '../types'
@@ -18,6 +18,8 @@ export function PrayerPicker({ value, onChange }: PrayerPickerProps) {
           type="button"
           role="radio"
           aria-checked={value === item.id}
+          aria-label={item.shortTitle}
+          title={item.description}
           className={
             value === item.id
               ? 'prayer-picker__btn prayer-picker__btn--active'
@@ -25,8 +27,7 @@ export function PrayerPicker({ value, onChange }: PrayerPickerProps) {
           }
           onClick={() => onChange(item.id)}
         >
-          <span className="prayer-picker__title">{item.shortTitle}</span>
-          <span className="prayer-picker__desc">{item.description}</span>
+          {item.compactTitle}
         </button>
       ))}
     </div>
