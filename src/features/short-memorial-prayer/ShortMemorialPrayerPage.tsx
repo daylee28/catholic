@@ -18,6 +18,7 @@ import {
   requestWakeLock,
 } from './lib/wakeLock'
 import { loadPrefs, savePrefs } from './lib/prefs'
+import { setScrollRoot, setScrollTop } from './lib/scrollRoot'
 import { useAutoScroll } from './lib/useAutoScroll'
 import {
   FONT_SIZE_STEP,
@@ -36,6 +37,10 @@ export function ShortMemorialPrayerPage() {
   const prayer = getPrayerDocument(prefs.prayerId)
 
   useAutoScroll(prefs.autoScrollOn, prefs.autoScrollSpeed)
+
+  function bindScrollRoot(el: HTMLDivElement | null) {
+    setScrollRoot(el)
+  }
 
   useEffect(() => {
     savePrefs(prefs)
@@ -95,7 +100,7 @@ export function ShortMemorialPrayerPage() {
 
   function selectPrayer(prayerId: PrayerId) {
     updatePrefs({ prayerId })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setScrollTop(0)
   }
 
   return (
@@ -114,66 +119,68 @@ export function ShortMemorialPrayerPage() {
         </div>
       </header>
 
-      <main className="smp__main">
-        <h1 className="smp__page-title">{prayer.title}</h1>
+      <div className="smp__scroll" ref={bindScrollRoot}>
+        <main className="smp__main">
+          <h1 className="smp__page-title">{prayer.title}</h1>
 
-        <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
+          <PrayerPicker value={prefs.prayerId} onChange={selectPrayer} />
 
-        <ReadingAids
-          wakeSupported={wakeSupported}
-          wakeLockOn={prefs.wakeLockOn}
-          onWakeLockChange={(wakeLockOn) => updatePrefs({ wakeLockOn })}
-        />
-
-        {prayer.hasShortSituations ? (
-          <SituationPicker
-            value={prefs.situationId}
-            onChange={(situationId: SituationId) =>
-              updatePrefs({ situationId })
-            }
+          <ReadingAids
+            wakeSupported={wakeSupported}
+            wakeLockOn={prefs.wakeLockOn}
+            onWakeLockChange={(wakeLockOn) => updatePrefs({ wakeLockOn })}
           />
-        ) : null}
 
-        {prayer.hasLongOptions ? (
-          <LongOptions
+          {prayer.hasShortSituations ? (
+            <SituationPicker
+              value={prefs.situationId}
+              onChange={(situationId: SituationId) =>
+                updatePrefs({ situationId })
+              }
+            />
+          ) : null}
+
+          {prayer.hasLongOptions ? (
+            <LongOptions
+              readingId={prefs.readingId}
+              litanyOn={prefs.litanyOn}
+              afterLitanyId={prefs.afterLitanyId}
+              onReadingChange={(readingId: ReadingId) =>
+                updatePrefs({ readingId })
+              }
+              onLitanyChange={(litanyOn) => updatePrefs({ litanyOn })}
+              onAfterChange={(afterLitanyId: AfterLitanyId) =>
+                updatePrefs({ afterLitanyId })
+              }
+            />
+          ) : null}
+
+          <PrayerBody
+            sections={prayer.sections}
+            deceasedName={prefs.deceasedName}
+            situationId={prefs.situationId}
             readingId={prefs.readingId}
             litanyOn={prefs.litanyOn}
             afterLitanyId={prefs.afterLitanyId}
-            onReadingChange={(readingId: ReadingId) =>
-              updatePrefs({ readingId })
-            }
-            onLitanyChange={(litanyOn) => updatePrefs({ litanyOn })}
-            onAfterChange={(afterLitanyId: AfterLitanyId) =>
-              updatePrefs({ afterLitanyId })
-            }
           />
-        ) : null}
 
-        <PrayerBody
-          sections={prayer.sections}
-          deceasedName={prefs.deceasedName}
-          situationId={prefs.situationId}
-          readingId={prefs.readingId}
-          litanyOn={prefs.litanyOn}
-          afterLitanyId={prefs.afterLitanyId}
-        />
-
-        <footer className="smp__footer">
-          <p>
-            기도문 출처:{' '}
-            <a
-              href={prayer.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {prayer.sourceLabel}
-            </a>
-          </p>
-          <p className="smp__footer-note">
-            가정·본당 기도 보조용입니다. 이름·설정은 이 기기에만 저장됩니다.
-          </p>
-        </footer>
-      </main>
+          <footer className="smp__footer">
+            <p>
+              기도문 출처:{' '}
+              <a
+                href={prayer.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {prayer.sourceLabel}
+              </a>
+            </p>
+            <p className="smp__footer-note">
+              가정·본당 기도 보조용입니다. 이름·설정은 이 기기에만 저장됩니다.
+            </p>
+          </footer>
+        </main>
+      </div>
 
       <ScrollScrubber autoScrollOn={prefs.autoScrollOn} />
 

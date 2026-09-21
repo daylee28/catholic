@@ -1,6 +1,7 @@
-// Auto-scroll — pause on user input; hard-lock while scrubber dragging
+// Auto-scroll on the reading pane (not window)
 
 import { useEffect, useRef } from 'react'
+import { getMaxScroll, getScrollTop, scrollByY } from './scrollRoot'
 
 const SPEED_PX_PER_SEC: Record<number, number> = {
   1: 22,
@@ -21,11 +22,6 @@ export function setScrubberDragLock(locked: boolean) {
 
 export function notifyUserScrollIntent() {
   window.dispatchEvent(new Event(USER_SCROLL_INTENT_EVENT))
-}
-
-function maxScrollY(): number {
-  const el = document.documentElement
-  return Math.max(0, el.scrollHeight - el.clientHeight)
 }
 
 export function useAutoScroll(enabled: boolean, speedLevel: number) {
@@ -58,8 +54,8 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
         return
       }
 
-      const max = maxScrollY()
-      const y = window.scrollY || document.documentElement.scrollTop
+      const max = getMaxScroll()
+      const y = getScrollTop()
       if (max <= 0 || y >= max - 1) {
         lastTsRef.current = 0
         return
@@ -78,7 +74,7 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
 
       const delta = Math.floor(carryRef.current)
       carryRef.current -= delta
-      window.scrollBy(0, Math.min(delta, max - y))
+      scrollByY(Math.min(delta, max - y))
     }
 
     raf = requestAnimationFrame(tick)

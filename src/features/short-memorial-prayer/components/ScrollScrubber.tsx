@@ -1,25 +1,20 @@
-// Right-edge scrubber: always visible, wide hit area, relative drag.
-// Locks max-scroll at drag start so mobile chrome resize cannot bounce.
+// Right scrubber — drives reading-pane scrollTop via finger delta only.
+// Rejects huge per-frame jumps (viewport/clientY discontinuities → top bounce).
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import {
+  getMaxScroll,
+  getScrollTop,
+  getScrollRoot,
+  setScrollTop,
+} from '../lib/scrollRoot'
 import {
   notifyUserScrollIntent,
   setScrubberDragLock,
 } from '../lib/useAutoScroll'
 
-function maxScrollY(): number {
-  const el = document.documentElement
-  return Math.max(0, el.scrollHeight - el.clientHeight)
-}
-
-function currentScrollY(): number {
-  return window.scrollY || document.documentElement.scrollTop || 0
-}
-
-function scrollRatio(max: number): number {
-  if (max <= 0) return 0
-  return Math.min(1, Math.max(0, currentScrollY() / max))
-}
+/** Ignore single-frame finger deltas larger than this (px) — usually a coord glitch */
+const MAX_FRAME_DY = 48
 
 type Props = {
   autoScrollOn?: boolean
@@ -31,11 +26,10 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const fillRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
-  const dragStartClientYRef = useRef(0)
-  const dragStartScrollYRef = useRef(0)
+  const lastClientYRef = useRef(0)
+  const scrollAtDragRef = useRef(0)
   const lockedMaxRef = useRef(0)
-  const pendingTopRef = useRef<number | null>(null)
-  const scrollRafRef = useRef(0)
+  const lockedTravelRef = useRef(1)
   const [needed, setNeeded] = useState(false)
 
   void autoScrollOn
@@ -59,63 +53,55 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     rootRef.current?.classList.toggle('scroll-scrubber--active', on)
   }
 
-  function flushScroll() {
-    scrollRafRef.current = 0
-    const top = pendingTopRef.current
-    if (top === null) return
-    pendingTopRef.current = null
-    window.scrollTo(0, top)
-  }
+  function applyDrag(clientY: number) {
+    let dy = clientY - lastClientYRef.current
+    lastClientYRef.current = clientY
 
-  function scheduleScroll(top: number) {
-    pendingTopRef.current = top
-    if (!scrollRafRef.current) {
-      scrollRafRef.current = requestAnimationFrame(flushScroll)
-    }
-  }
+    // Drop discontinuous jumps (mobile visual-viewport / coordinate resets)
+    if (Math.abs(dy) > MAX_FRAME_DY) dy = 0
 
-  function dragRelative(clientY: number) {
-    const track = trackRef.current
-    const thumb = thumbRef.current
-    if (!track) return
-
-    const thumbH = thumb?.offsetHeight || 24
-    const travel = Math.max(1, track.clientHeight - thumbH)
     const max = lockedMaxRef.current
-    const deltaRatio = (clientY - dragStartClientYRef.current) / travel
-    const top = Math.min(
+    const travel = lockedTravelRef.current
+    const next = Math.min(
       max,
-      Math.max(0, dragStartScrollYRef.current + deltaRatio * max),
+      Math.max(0, scrollAtDragRef.current + (dy / travel) * max),
     )
-    const ratio = max <= 0 ? 0 : top / max
-
-    paint(ratio)
-    scheduleScroll(top)
+    scrollAtDragRef.current = next
+    setScrollTop(next)
+    paint(max <= 0 ? 0 : next / max)
   }
 
   useEffect(() => {
     const sync = () => {
-      const max = maxScrollY()
+      const max = getMaxScroll()
       setNeeded(max > 40)
-      if (!draggingRef.current) paint(scrollRatio(max))
+      if (!draggingRef.current) {
+        paint(max <= 0 ? 0 : getScrollTop() / max)
+      }
     }
-
-    sync()
 
     const onScroll = () => {
       if (draggingRef.current) return
-      paint(scrollRatio(maxScrollY()))
+      const max = getMaxScroll()
+      paint(max <= 0 ? 0 : getScrollTop() / max)
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const pane =
+      (document.querySelector('.smp__scroll') as HTMLElement | null) ??
+      getScrollRoot()
+    sync()
+    pane.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', sync)
 
+    const ro =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null
+    ro?.observe(pane)
+
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      pane.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', sync)
-      if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current)
+      ro?.disconnect()
       setScrubberDragLock(false)
-      document.documentElement.classList.remove('smp--scrubbing')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -123,39 +109,49 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     e.preventDefault()
     e.stopPropagation()
+
+    // Focused name field can scrollIntoView → jump toward top
+    const ae = document.activeElement
+    if (ae instanceof HTMLElement && ae.closest('.smp__header')) {
+      ae.blur()
+    }
+
+    const track = trackRef.current
+    const thumb = thumbRef.current
+    const thumbH = thumb?.offsetHeight || 24
+    const travel = Math.max(1, (track?.clientHeight || 1) - thumbH)
+
     draggingRef.current = true
-    lockedMaxRef.current = maxScrollY()
+    lockedMaxRef.current = getMaxScroll()
+    lockedTravelRef.current = travel
+    scrollAtDragRef.current = getScrollTop()
+    lastClientYRef.current = e.clientY
+
     setScrubberDragLock(true)
     notifyUserScrollIntent()
     setActive(true)
-    document.documentElement.classList.add('smp--scrubbing')
     e.currentTarget.setPointerCapture(e.pointerId)
 
-    dragStartClientYRef.current = e.clientY
-    dragStartScrollYRef.current = currentScrollY()
-    paint(scrollRatio(lockedMaxRef.current))
+    const max = lockedMaxRef.current
+    paint(max <= 0 ? 0 : scrollAtDragRef.current / max)
   }
 
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!draggingRef.current) return
     e.preventDefault()
-    dragRelative(e.clientY)
+    applyDrag(e.clientY)
   }
 
   function onPointerUp(e: PointerEvent<HTMLDivElement>) {
     if (!draggingRef.current) return
     draggingRef.current = false
     setScrubberDragLock(false)
-    document.documentElement.classList.remove('smp--scrubbing')
-    if (scrollRafRef.current) {
-      cancelAnimationFrame(scrollRafRef.current)
-      flushScroll()
-    }
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
     setActive(false)
-    paint(scrollRatio(maxScrollY()))
+    const max = getMaxScroll()
+    paint(max <= 0 ? 0 : getScrollTop() / max)
   }
 
   if (!needed) return null
