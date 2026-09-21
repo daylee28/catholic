@@ -1,4 +1,5 @@
-// Right scrubber — show only while scrolling/dragging; wide hit when visible.
+// Right scrubber — hidden at rest; shows on finger/wheel scroll or when grabbed.
+// Always keeps a wide invisible hit strip so it can be grabbed.
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import {
@@ -13,6 +14,7 @@ import {
 } from '../lib/useAutoScroll'
 
 const HIDE_AFTER_MS = 1200
+const USER_SCROLL_MS = 1600
 /** Ignore single-frame finger deltas larger than this (px) — usually a coord glitch */
 const MAX_FRAME_DY = 48
 
@@ -31,6 +33,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const lockedMaxRef = useRef(0)
   const lockedTravelRef = useRef(1)
   const hideTimerRef = useRef(0)
+  const userScrollUntilRef = useRef(0)
   const autoScrollOnRef = useRef(autoScrollOn)
   const [needed, setNeeded] = useState(false)
 
@@ -68,6 +71,11 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     }, HIDE_AFTER_MS)
   }
 
+  function markUserScroll() {
+    userScrollUntilRef.current = Date.now() + USER_SCROLL_MS
+    showBriefly()
+  }
+
   function applyDrag(clientY: number) {
     let dy = clientY - lastClientYRef.current
     lastClientYRef.current = clientY
@@ -98,6 +106,12 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       if (draggingRef.current) return
       const max = getMaxScroll()
       paint(max <= 0 ? 0 : getScrollTop() / max)
+
+      // Finger/wheel recently → show. Pure auto-scroll → stay hidden.
+      if (Date.now() < userScrollUntilRef.current) {
+        showBriefly()
+        return
+      }
       if (autoScrollOnRef.current) {
         setVisible(false)
         return
@@ -110,6 +124,9 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
       getScrollRoot()
     sync()
     pane.addEventListener('scroll', onScroll, { passive: true })
+    pane.addEventListener('touchstart', markUserScroll, { passive: true })
+    pane.addEventListener('touchmove', markUserScroll, { passive: true })
+    pane.addEventListener('wheel', markUserScroll, { passive: true })
     window.addEventListener('resize', sync)
 
     const ro =
@@ -118,6 +135,9 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
 
     return () => {
       pane.removeEventListener('scroll', onScroll)
+      pane.removeEventListener('touchstart', markUserScroll)
+      pane.removeEventListener('touchmove', markUserScroll)
+      pane.removeEventListener('wheel', markUserScroll)
       window.removeEventListener('resize', sync)
       ro?.disconnect()
       window.clearTimeout(hideTimerRef.current)
@@ -127,7 +147,9 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
   }, [])
 
   useEffect(() => {
-    if (autoScrollOn && !draggingRef.current) setVisible(false)
+    if (autoScrollOn && !draggingRef.current) {
+      if (Date.now() >= userScrollUntilRef.current) setVisible(false)
+    }
   }, [autoScrollOn])
 
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
@@ -149,6 +171,7 @@ export function ScrollScrubber({ autoScrollOn = false }: Props) {
     lockedTravelRef.current = travel
     scrollAtDragRef.current = getScrollTop()
     lastClientYRef.current = e.clientY
+    userScrollUntilRef.current = Date.now() + USER_SCROLL_MS
 
     setScrubberDragLock(true)
     notifyUserScrollIntent()
