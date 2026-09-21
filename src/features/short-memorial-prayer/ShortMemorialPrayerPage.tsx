@@ -175,7 +175,7 @@ export function ShortMemorialPrayerPage() {
         </footer>
       </main>
 
-      <ScrollScrubber />
+      <ScrollScrubber autoScrollOn={prefs.autoScrollOn} />
 
       <AutoScrollDock
         on={prefs.autoScrollOn}

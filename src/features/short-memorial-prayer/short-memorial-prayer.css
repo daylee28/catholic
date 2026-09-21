@@ -16,7 +16,7 @@
   --touch: 48px;
   --read-max: 52rem;
   --page-pad: clamp(0.75rem, 3vw, 1.5rem);
-  --dock-h: 3.1rem;
+  --dock-h: 4.25rem;
   --font-body: "Noto Serif KR", "Apple SD Gothic Neo", "Malgun Gothic", serif;
   --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
@@ -199,16 +199,16 @@ body {
   line-height: 1.4;
 }
 
-/* Fixed bottom: thin one-line dock */
+/* Fixed bottom: auto + large speed buttons (elderly-friendly) */
 .scroll-dock {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 20;
-  padding: 0.35rem var(--page-pad) calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.45rem var(--page-pad) calc(0.45rem + env(safe-area-inset-bottom, 0px));
   background: rgba(247, 243, 234, 0.97);
-  border-top: 1px solid var(--accent);
+  border-top: 2px solid var(--accent);
   backdrop-filter: blur(8px);
 }
 
@@ -218,49 +218,50 @@ body {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  min-height: 2.4rem;
+  min-height: var(--touch);
 }
 
 .scroll-dock__check {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   flex-shrink: 0;
   font-family: var(--font-ui);
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
+  min-height: var(--touch);
 }
 
 .scroll-dock__check input {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.45rem;
+  height: 1.45rem;
   accent-color: var(--accent);
 }
 
 .scroll-dock__speeds {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.4rem;
   flex: 1;
   min-width: 0;
 }
 
-.scroll-dock__speeds.is-disabled {
-  opacity: 0.4;
+.scroll-dock__speeds.is-disabled .scroll-dock__speed-btn:not(.scroll-dock__speed-btn--active) {
+  opacity: 0.45;
 }
 
 .scroll-dock__speed-btn {
   flex: 1;
-  min-height: 2.15rem;
-  padding: 0.25rem 0.35rem;
-  border: 1.5px solid var(--accent);
+  min-height: var(--touch);
+  padding: 0.35rem 0.4rem;
+  border: 2px solid var(--accent);
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -272,6 +273,10 @@ body {
 .scroll-dock__speed-btn--active {
   background: var(--accent);
   color: #fff;
+  border-color: #2a4030;
+  box-shadow: inset 0 0 0 2px #fff;
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
 }
 
 /* Overlay scrubber — fades in only while scrolling */
@@ -499,10 +504,5 @@ body {
 @media (max-width: 480px) {
   .situation-picker {
     grid-template-columns: 1fr;
-  }
-
-  .scroll-dock__speed-btn {
-    font-size: 0.82rem;
-    padding: 0.2rem 0.2rem;
   }
 }

@@ -1,4 +1,4 @@
-// Overlay scrubber — show only on user scroll; position via DOM (no React jitter)
+// Overlay scrubber — show only on user wheel/touch; position via DOM (no React jitter)
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
@@ -12,18 +12,27 @@ function maxScrollY(): number {
 function scrollRatio(): number {
   const max = maxScrollY()
   if (max <= 0) return 0
-  const y = window.scrollY || document.documentElement.scrollTop
+  const y = document.documentElement.scrollTop || window.scrollY
   return Math.min(1, Math.max(0, y / max))
 }
 
-export function ScrollScrubber() {
+type Props = {
+  autoScrollOn?: boolean
+}
+
+export function ScrollScrubber({ autoScrollOn = false }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const fillRef = useRef<HTMLDivElement>(null)
   const thumbRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
+  const dragOffsetRef = useRef(0)
   const hideTimerRef = useRef(0)
+  const userInteractedUntilRef = useRef(0)
+  const autoScrollOnRef = useRef(autoScrollOn)
   const [needed, setNeeded] = useState(false)
+
+  autoScrollOnRef.current = autoScrollOn
 
   function paint(ratio: number) {
     const track = trackRef.current
@@ -46,6 +55,7 @@ export function ScrollScrubber() {
 
   function showBriefly() {
     if (draggingRef.current) return
+    userInteractedUntilRef.current = Date.now() + HIDE_AFTER_MS
     setVisible(true)
     window.clearTimeout(hideTimerRef.current)
     hideTimerRef.current = window.setTimeout(() => {
@@ -61,28 +71,38 @@ export function ScrollScrubber() {
     const rect = track.getBoundingClientRect()
     const thumbH = thumb?.offsetHeight || 14
     const travel = Math.max(1, rect.height - thumbH)
-    // Aim thumb center under finger
-    const y = clientY - rect.top - thumbH / 2
+    const y = clientY - rect.top - dragOffsetRef.current
     const ratio = Math.min(1, Math.max(0, y / travel))
     const max = maxScrollY()
-    window.scrollTo({ top: ratio * max })
+    // Instant scroll — avoid smooth scroll fighting the thumb
+    document.documentElement.scrollTop = ratio * max
     paint(ratio)
   }
 
   useEffect(() => {
     const syncNeeded = () => {
       setNeeded(maxScrollY() > 40)
-      paint(scrollRatio())
+      if (!draggingRef.current) paint(scrollRatio())
     }
 
     syncNeeded()
 
-    // Position follows all scrolling (incl. auto), but visibility only on user input
+    // Position follows scroll (incl. auto), but never overwrite thumb while dragging
     const onScroll = () => {
+      if (draggingRef.current) return
       paint(scrollRatio())
+      // Pure auto-scroll: keep scrubber hidden
+      if (
+        autoScrollOnRef.current &&
+        Date.now() > userInteractedUntilRef.current
+      ) {
+        setVisible(false)
+      }
     }
 
+    // Visibility only from real user scroll input — not from `scroll` events
     const onUserIntent = () => {
+      if (draggingRef.current) return
       paint(scrollRatio())
       showBriefly()
     }
@@ -102,11 +122,34 @@ export function ScrollScrubber() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // When auto-scroll turns on with no recent hand/wheel, force hide
+  useEffect(() => {
+    if (autoScrollOn && Date.now() > userInteractedUntilRef.current) {
+      if (!draggingRef.current) setVisible(false)
+    }
+  }, [autoScrollOn])
+
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     draggingRef.current = true
+    userInteractedUntilRef.current = Date.now() + HIDE_AFTER_MS
     setVisible(true)
     window.clearTimeout(hideTimerRef.current)
     e.currentTarget.setPointerCapture(e.pointerId)
+
+    const thumb = thumbRef.current
+    const thumbH = thumb?.offsetHeight || 14
+    if (thumb) {
+      const thumbRect = thumb.getBoundingClientRect()
+      const onThumb =
+        e.clientY >= thumbRect.top && e.clientY <= thumbRect.bottom
+      // Grabbing the thumb: keep finger offset. Empty track: center under finger.
+      dragOffsetRef.current = onThumb
+        ? e.clientY - thumbRect.top
+        : thumbH / 2
+    } else {
+      dragOffsetRef.current = thumbH / 2
+    }
+
     jumpToClientY(e.clientY)
   }
 
@@ -120,6 +163,8 @@ export function ScrollScrubber() {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
+    // Sync once from settled scroll position
+    paint(scrollRatio())
     window.clearTimeout(hideTimerRef.current)
     hideTimerRef.current = window.setTimeout(() => {
       setVisible(false)

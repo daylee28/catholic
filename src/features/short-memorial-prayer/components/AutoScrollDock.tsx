@@ -28,7 +28,7 @@ export function AutoScrollDock({
         </label>
 
         <div
-          className={on ? 'scroll-dock__speeds' : 'scroll-dock__speeds is-disabled'}
+          className="scroll-dock__speeds"
           role="group"
           aria-label="스크롤 속도"
         >
@@ -36,14 +36,16 @@ export function AutoScrollDock({
             <button
               key={level}
               type="button"
-              disabled={!on}
               className={
                 speed === level
                   ? 'scroll-dock__speed-btn scroll-dock__speed-btn--active'
                   : 'scroll-dock__speed-btn'
               }
               aria-pressed={speed === level}
-              onClick={() => onSpeedChange(level)}
+              onClick={() => {
+                onSpeedChange(level)
+                if (!on) onToggle(true)
+              }}
             >
               {SCROLL_SPEED_LABELS[level]}
             </button>
