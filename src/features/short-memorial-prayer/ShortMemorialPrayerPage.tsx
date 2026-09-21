@@ -9,6 +9,7 @@ import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
 import { PrayerPicker } from './components/PrayerPicker'
 import { ReadingAids } from './components/ReadingAids'
+import { ScrollScrubber } from './components/ScrollScrubber'
 import { SituationPicker } from './components/SituationPicker'
 import { getPrayerDocument } from './data/catalog'
 import {
@@ -173,6 +174,8 @@ export function ShortMemorialPrayerPage() {
           </p>
         </footer>
       </main>
+
+      <ScrollScrubber />
 
       <AutoScrollDock
         on={prefs.autoScrollOn}
