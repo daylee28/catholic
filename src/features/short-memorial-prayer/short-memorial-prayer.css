@@ -524,6 +524,147 @@ body {
   vertical-align: baseline;
 }
 
+.known-prayer-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-underline-offset: 0.15em;
+}
+
+.known-prayer-link--title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  border-bottom: none;
+  font-size: inherit;
+}
+
+.known-prayer-link__hint {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--accent);
+}
+
+/* Floating 주님의 기도 / 성모송 sheet */
+.known-prayer-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.known-prayer-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(20, 24, 20, 0.45);
+  cursor: pointer;
+}
+
+.known-prayer-sheet__panel {
+  position: relative;
+  z-index: 1;
+  width: min(36rem, 100%);
+  max-height: min(78dvh, 40rem);
+  overflow: auto;
+  border: 2px solid var(--accent);
+  border-radius: 12px 12px 8px 8px;
+  background: #fffef8;
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18);
+  padding: 0.85rem 1rem 1.15rem;
+}
+
+.known-prayer-sheet__top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.known-prayer-sheet__tabs {
+  display: flex;
+  flex: 1;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.known-prayer-sheet__tab {
+  flex: 1;
+  min-height: 2.6rem;
+  padding: 0.35rem 0.4rem;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.known-prayer-sheet__tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.known-prayer-sheet__close {
+  flex-shrink: 0;
+  min-height: 2.6rem;
+  padding: 0.35rem 0.75rem;
+  border: 2px solid #666;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.known-prayer-sheet__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.known-prayer-sheet__note {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.45;
+}
+
+.known-prayer-sheet__body {
+  font-size: 1.2rem;
+  line-height: 1.75;
+}
+
+.known-prayer-sheet__line {
+  margin: 0 0 0.15rem;
+}
+
+.known-prayer-sheet__gap {
+  height: 0.75rem;
+}
+
 .smp__footer {
   margin-top: 2rem;
   padding-top: 1rem;
@@ -605,7 +746,8 @@ body {
   .smp__header,
   .smp__scroll,
   .scroll-scrubber,
-  .scroll-dock {
+  .scroll-dock,
+  .known-prayer-sheet {
     display: none !important;
   }
 

@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AutoScrollDock } from './components/AutoScrollDock'
 import { FontZoom } from './components/FontZoom'
+import { KnownPrayerSheet } from './components/KnownPrayerSheet'
 import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
@@ -14,6 +15,7 @@ import { ReadingAids } from './components/ReadingAids'
 import { ScrollScrubber } from './components/ScrollScrubber'
 import { SituationPicker } from './components/SituationPicker'
 import { getPrayerDocument } from './data/catalog'
+import type { KnownPrayerId } from './data/known-prayers'
 import {
   isWakeLockSupported,
   releaseWakeLock,
@@ -34,6 +36,9 @@ import './short-memorial-prayer.css'
 
 export function ShortMemorialPrayerPage() {
   const [prefs, setPrefs] = useState<AppPrefs>(() => loadPrefs())
+  const [knownPrayerId, setKnownPrayerId] = useState<KnownPrayerId | null>(
+    null,
+  )
   const wakeRef = useRef<Awaited<ReturnType<typeof requestWakeLock>>>(null)
   const wakeSupported = isWakeLockSupported()
   const prayer = getPrayerDocument(prefs.prayerId)
@@ -169,6 +174,7 @@ export function ShortMemorialPrayerPage() {
             readingId={prefs.readingId}
             litanyOn={prefs.litanyOn}
             afterLitanyId={prefs.afterLitanyId}
+            onOpenKnownPrayer={setKnownPrayerId}
           />
 
           <footer className="smp__footer">
@@ -208,6 +214,12 @@ export function ShortMemorialPrayerPage() {
         readingId={prefs.readingId}
         litanyOn={prefs.litanyOn}
         afterLitanyId={prefs.afterLitanyId}
+      />
+
+      <KnownPrayerSheet
+        prayerId={knownPrayerId}
+        onClose={() => setKnownPrayerId(null)}
+        onSwitch={setKnownPrayerId}
       />
     </div>
   )

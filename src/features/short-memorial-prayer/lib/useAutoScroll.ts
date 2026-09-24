@@ -9,9 +9,15 @@ export const USER_SCROLL_INTENT_EVENT = 'prayer-user-scroll-intent'
 
 /** True while user is dragging the scrubber — auto-scroll must not move at all */
 let scrubberDragLock = false
+/** True while known-prayer sheet is open */
+let overlayPauseLock = false
 
 export function setScrubberDragLock(locked: boolean) {
   scrubberDragLock = locked
+}
+
+export function setOverlayPauseLock(locked: boolean) {
+  overlayPauseLock = locked
 }
 
 export function notifyUserScrollIntent() {
@@ -47,6 +53,7 @@ export function useAutoScroll(enabled: boolean, pxPerSec: number) {
       if (
         speed <= 0 ||
         scrubberDragLock ||
+        overlayPauseLock ||
         Date.now() < pausedUntilRef.current
       ) {
         lastTsRef.current = 0
