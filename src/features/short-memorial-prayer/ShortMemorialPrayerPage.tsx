@@ -8,6 +8,8 @@ import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
 import { PrayerPicker } from './components/PrayerPicker'
+import { PrintPdfButton } from './components/PrintPdfButton'
+import { PrintSheet } from './components/PrintSheet'
 import { ReadingAids } from './components/ReadingAids'
 import { ScrollScrubber } from './components/ScrollScrubber'
 import { SituationPicker } from './components/SituationPicker'
@@ -103,14 +105,19 @@ export function ShortMemorialPrayerPage() {
     setScrollTop(0)
   }
 
+  function printPdf() {
+    window.print()
+  }
+
   return (
     <div className="smp">
-      <header className="smp__header">
+      <header className="smp__header no-print">
         <div className="smp__top">
           <NameInput
             value={prefs.deceasedName}
             onChange={(deceasedName) => updatePrefs({ deceasedName })}
           />
+          <PrintPdfButton onPrint={printPdf} />
           <FontZoom
             fontSizePx={prefs.fontSizePx}
             step={FONT_SIZE_STEP}
@@ -119,7 +126,7 @@ export function ShortMemorialPrayerPage() {
         </div>
       </header>
 
-      <div className="smp__scroll" ref={bindScrollRoot}>
+      <div className="smp__scroll no-print" ref={bindScrollRoot}>
         <main className="smp__main">
           <h1 className="smp__page-title">{prayer.title}</h1>
 
@@ -182,13 +189,25 @@ export function ShortMemorialPrayerPage() {
         </main>
       </div>
 
-      <ScrollScrubber autoScrollOn={prefs.autoScrollOn} />
+      <div className="no-print">
+        <ScrollScrubber autoScrollOn={prefs.autoScrollOn} />
+        <AutoScrollDock
+          on={prefs.autoScrollOn}
+          speed={prefs.autoScrollSpeed}
+          onToggle={(autoScrollOn) => updatePrefs({ autoScrollOn })}
+          onSpeedChange={(autoScrollSpeed) =>
+            updatePrefs({ autoScrollSpeed })
+          }
+        />
+      </div>
 
-      <AutoScrollDock
-        on={prefs.autoScrollOn}
-        speed={prefs.autoScrollSpeed}
-        onToggle={(autoScrollOn) => updatePrefs({ autoScrollOn })}
-        onSpeedChange={(autoScrollSpeed) => updatePrefs({ autoScrollSpeed })}
+      <PrintSheet
+        prayer={prayer}
+        deceasedName={prefs.deceasedName}
+        situationId={prefs.situationId}
+        readingId={prefs.readingId}
+        litanyOn={prefs.litanyOn}
+        afterLitanyId={prefs.afterLitanyId}
       />
     </div>
   )
