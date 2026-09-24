@@ -665,6 +665,99 @@ body {
   height: 0.75rem;
 }
 
+/* Print options dialog (desktop PDF) */
+.print-options {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.print-options__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(20, 24, 20, 0.4);
+  cursor: pointer;
+}
+
+.print-options__panel {
+  position: relative;
+  z-index: 1;
+  width: min(22rem, 100%);
+  padding: 1rem 1.1rem 1.05rem;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  background: #fffef8;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.print-options__title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-ui);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.print-options__desc {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  color: #444;
+  line-height: 1.4;
+}
+
+.print-options__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.45rem;
+  font-family: var(--font-ui);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.print-options__check input {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--accent);
+}
+
+.print-options__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.print-options__btn {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.print-options__btn--ghost {
+  border: 2px solid #777;
+  background: #fff;
+  color: #222;
+}
+
+.print-options__btn--primary {
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
 .smp__footer {
   margin-top: 2rem;
   padding-top: 1rem;
@@ -747,7 +840,8 @@ body {
   .smp__scroll,
   .scroll-scrubber,
   .scroll-dock,
-  .known-prayer-sheet {
+  .known-prayer-sheet,
+  .print-options {
     display: none !important;
   }
 
@@ -867,6 +961,52 @@ body {
 
   .print-sheet__footer p {
     margin: 0.15rem 0;
+  }
+
+  .print-known-block {
+    margin: 0.75rem 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-known-box {
+    border: 1.25pt solid #222;
+    padding: 0.55rem 0.7rem 0.65rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-known-box__title {
+    margin: 0 0 0.35rem;
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-size: 12pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .print-known-box__note {
+    margin: 0 0 0.4rem;
+    font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-size: 8.5pt;
+    color: #444;
+    text-align: center;
+  }
+
+  .print-known-box__body {
+    font-size: 11pt;
+    line-height: 1.65;
+  }
+
+  .print-known-box__line {
+    margin: 0 0 0.08rem;
+    text-align: center;
+  }
+
+  .print-known-box__gap {
+    height: 0.45rem;
   }
 }
 

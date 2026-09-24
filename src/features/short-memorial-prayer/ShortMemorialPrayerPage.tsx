@@ -9,6 +9,7 @@ import { LongOptions } from './components/LongOptions'
 import { NameInput } from './components/NameInput'
 import { PrayerBody } from './components/PrayerBody'
 import { PrayerPicker } from './components/PrayerPicker'
+import { PrintOptionsDialog, type PrintKnownOptions } from './components/PrintOptionsDialog'
 import { PrintPdfButton } from './components/PrintPdfButton'
 import { PrintSheet } from './components/PrintSheet'
 import { ReadingAids } from './components/ReadingAids'
@@ -39,6 +40,12 @@ export function ShortMemorialPrayerPage() {
   const [knownPrayerId, setKnownPrayerId] = useState<KnownPrayerId | null>(
     null,
   )
+  const [printDialogOpen, setPrintDialogOpen] = useState(false)
+  const [printKnownOptions, setPrintKnownOptions] =
+    useState<PrintKnownOptions>({
+      includeLordsPrayer: true,
+      includeHailMary: true,
+    })
   const wakeRef = useRef<Awaited<ReturnType<typeof requestWakeLock>>>(null)
   const wakeSupported = isWakeLockSupported()
   const prayer = getPrayerDocument(prefs.prayerId)
@@ -111,7 +118,13 @@ export function ShortMemorialPrayerPage() {
   }
 
   function printPdf() {
-    window.print()
+    setPrintDialogOpen(true)
+  }
+
+  function confirmPrint() {
+    setPrintDialogOpen(false)
+    // Let React paint print sheet options before the print dialog
+    window.setTimeout(() => window.print(), 50)
   }
 
   return (
@@ -214,6 +227,15 @@ export function ShortMemorialPrayerPage() {
         readingId={prefs.readingId}
         litanyOn={prefs.litanyOn}
         afterLitanyId={prefs.afterLitanyId}
+        knownOptions={printKnownOptions}
+      />
+
+      <PrintOptionsDialog
+        open={printDialogOpen}
+        value={printKnownOptions}
+        onChange={setPrintKnownOptions}
+        onCancel={() => setPrintDialogOpen(false)}
+        onConfirm={confirmPrint}
       />
 
       <KnownPrayerSheet
