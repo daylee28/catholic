@@ -1,13 +1,7 @@
-// Auto-scroll on the reading pane (not window)
+// Auto-scroll on the reading pane — speed is px/sec (0 = idle)
 
 import { useEffect, useRef } from 'react'
 import { getMaxScroll, getScrollTop, scrollByY } from './scrollRoot'
-
-const SPEED_PX_PER_SEC: Record<number, number> = {
-  1: 22,
-  2: 40,
-  3: 70,
-}
 
 const RESUME_AFTER_MS = 1800
 
@@ -24,10 +18,12 @@ export function notifyUserScrollIntent() {
   window.dispatchEvent(new Event(USER_SCROLL_INTENT_EVENT))
 }
 
-export function useAutoScroll(enabled: boolean, speedLevel: number) {
+export function useAutoScroll(enabled: boolean, pxPerSec: number) {
   const pausedUntilRef = useRef(0)
   const lastTsRef = useRef(0)
   const carryRef = useRef(0)
+  const speedRef = useRef(pxPerSec)
+  speedRef.current = pxPerSec
 
   useEffect(() => {
     if (!enabled) {
@@ -35,8 +31,6 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
       carryRef.current = 0
       return
     }
-
-    const pxPerSec = SPEED_PX_PER_SEC[speedLevel] ?? SPEED_PX_PER_SEC[2]
 
     const pauseFromUser = () => {
       pausedUntilRef.current = Date.now() + RESUME_AFTER_MS
@@ -49,7 +43,12 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
     const tick = (ts: number) => {
       raf = requestAnimationFrame(tick)
 
-      if (scrubberDragLock || Date.now() < pausedUntilRef.current) {
+      const speed = speedRef.current
+      if (
+        speed <= 0 ||
+        scrubberDragLock ||
+        Date.now() < pausedUntilRef.current
+      ) {
         lastTsRef.current = 0
         return
       }
@@ -68,7 +67,7 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
 
       const dt = Math.min(64, ts - lastTsRef.current) / 1000
       lastTsRef.current = ts
-      carryRef.current += pxPerSec * dt
+      carryRef.current += speed * dt
 
       if (carryRef.current < 1) return
 
@@ -91,5 +90,5 @@ export function useAutoScroll(enabled: boolean, speedLevel: number) {
       window.removeEventListener('keydown', pauseFromUser)
       window.removeEventListener(USER_SCROLL_INTENT_EVENT, pauseFromUser)
     }
-  }, [enabled, speedLevel])
+  }, [enabled])
 }

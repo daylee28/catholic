@@ -78,7 +78,7 @@ export interface AppPrefs {
   afterLitanyId: AfterLitanyId
   wakeLockOn: boolean
   autoScrollOn: boolean
-  /** 1 느림 · 2 보통 · 3 빠름 */
+  /** Auto-scroll speed in px/sec (0 = stop, higher = faster) */
   autoScrollSpeed: number
 }
 
@@ -87,17 +87,14 @@ export const FONT_SIZE_MAX = 40
 export const FONT_SIZE_DEFAULT = 22
 export const FONT_SIZE_STEP = 2
 
-export const AUTO_SCROLL_SPEED_MIN = 1
-export const AUTO_SCROLL_SPEED_MAX = 3
-export const AUTO_SCROLL_SPEED_DEFAULT = 2
+/** px per second */
+export const AUTO_SCROLL_SPEED_MIN = 0
+export const AUTO_SCROLL_SPEED_MAX = 120
+export const AUTO_SCROLL_SPEED_DEFAULT = 40
+export const AUTO_SCROLL_SPEED_STEP = 1
 
-export const SCROLL_SPEED_LEVELS = [1, 2, 3] as const
-
-export const SCROLL_SPEED_LABELS: Record<number, string> = {
-  1: '느림',
-  2: '보통',
-  3: '빠름',
-}
+/** Prefs schema version — used to migrate old 느림/보통/빠름 levels */
+export const PREFS_VERSION = 2
 
 export const SITUATION_LABELS: Record<SituationId, string> = {
   funeral: '사망일~장례',

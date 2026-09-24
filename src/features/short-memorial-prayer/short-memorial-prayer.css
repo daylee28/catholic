@@ -216,7 +216,7 @@ body {
   line-height: 1.4;
 }
 
-/* Fixed bottom: auto + large speed buttons (elderly-friendly) */
+/* Fixed bottom: 자동 + speed slider + number (single row) */
 .scroll-dock {
   position: fixed;
   left: 0;
@@ -256,7 +256,7 @@ body {
   accent-color: var(--accent);
 }
 
-.scroll-dock__speeds {
+.scroll-dock__speed {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -264,35 +264,50 @@ body {
   min-width: 0;
 }
 
-.scroll-dock__speeds.is-disabled .scroll-dock__speed-btn:not(.scroll-dock__speed-btn--active) {
-  opacity: 0.45;
+.scroll-dock__speed-edge {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #555;
 }
 
-.scroll-dock__speed-btn {
+.scroll-dock__slider {
   flex: 1;
-  min-height: var(--touch);
-  padding: 0.35rem 0.4rem;
+  min-width: 0;
+  height: 2rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.scroll-dock__slider:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.scroll-dock__speed-num {
+  flex-shrink: 0;
+  width: 3.4rem;
+  min-height: 2.4rem;
+  padding: 0.2rem 0.25rem;
   border: 2px solid var(--accent);
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  cursor: pointer;
+  text-align: center;
 }
 
-.scroll-dock__speed-btn:disabled {
+.scroll-dock__speed-num:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.scroll-dock__speed-btn--active {
-  background: var(--accent);
-  color: #fff;
-  border-color: #2a4030;
-  box-shadow: inset 0 0 0 2px #fff;
+.scroll-dock__speed-num:focus {
   outline: 2px solid var(--accent);
-  outline-offset: 0;
+  outline-offset: 1px;
 }
 
 /* Right scrubber — invisible at rest but still grabbable (wide hit strip) */

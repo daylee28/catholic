@@ -1,5 +1,5 @@
 // Spec: docs/spec/features/short-memorial-prayer/short-memorial-prayer.md
-// AppPrefs localStorage
+// AppPrefs localStorage (device-local — survives revisit)
 
 import { isPrayerId } from '../data/catalog'
 import {
@@ -9,6 +9,7 @@ import {
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
+  PREFS_VERSION,
   type AfterLitanyId,
   type AppPrefs,
   type ReadingId,
@@ -16,6 +17,15 @@ import {
 } from '../types'
 
 const STORAGE_KEY = 'short-memorial-prayer-prefs'
+
+/** Old discrete levels (1–5) → px/sec */
+const LEGACY_LEVEL_PX: Record<number, number> = {
+  1: 22,
+  2: 40,
+  3: 70,
+  4: 90,
+  5: 110,
+}
 
 const DEFAULT_PREFS: AppPrefs = {
   prayerId: 'short',
@@ -51,22 +61,32 @@ function clampFont(size: number): number {
   return Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, size))
 }
 
-function clampSpeed(speed: number): number {
-  const rounded = Math.round(speed)
-  // migrate old 1–5 prefs into 1–3
-  if (rounded >= 4) return 3
-  if (rounded <= 0) return AUTO_SCROLL_SPEED_DEFAULT
+export function clampSpeed(speed: number): number {
+  if (!Number.isFinite(speed)) return AUTO_SCROLL_SPEED_DEFAULT
   return Math.min(
     AUTO_SCROLL_SPEED_MAX,
-    Math.max(AUTO_SCROLL_SPEED_MIN, rounded),
+    Math.max(AUTO_SCROLL_SPEED_MIN, Math.round(speed)),
   )
 }
+
+function migrateSpeed(rawSpeed: number, prefsVersion: number): number {
+  if (prefsVersion >= 2) return clampSpeed(rawSpeed)
+  const level = Math.round(rawSpeed)
+  if (level >= 1 && level <= 5 && LEGACY_LEVEL_PX[level] != null) {
+    return LEGACY_LEVEL_PX[level]
+  }
+  return clampSpeed(rawSpeed)
+}
+
+type StoredPrefs = Partial<AppPrefs> & { prefsVersion?: number }
 
 export function loadPrefs(): AppPrefs {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULT_PREFS }
-    const parsed = JSON.parse(raw) as Partial<AppPrefs>
+    const parsed = JSON.parse(raw) as StoredPrefs
+    const version =
+      typeof parsed.prefsVersion === 'number' ? parsed.prefsVersion : 1
     return {
       prayerId: isPrayerId(parsed.prayerId) ? parsed.prayerId : 'short',
       deceasedName:
@@ -88,7 +108,7 @@ export function loadPrefs(): AppPrefs {
       autoScrollOn: Boolean(parsed.autoScrollOn),
       autoScrollSpeed:
         typeof parsed.autoScrollSpeed === 'number'
-          ? clampSpeed(parsed.autoScrollSpeed)
+          ? migrateSpeed(parsed.autoScrollSpeed, version)
           : AUTO_SCROLL_SPEED_DEFAULT,
     }
   } catch {
@@ -97,7 +117,8 @@ export function loadPrefs(): AppPrefs {
 }
 
 export function savePrefs(prefs: AppPrefs): void {
-  const next: AppPrefs = {
+  const next = {
+    prefsVersion: PREFS_VERSION,
     prayerId: prefs.prayerId,
     deceasedName: prefs.deceasedName,
     fontSizePx: clampFont(prefs.fontSizePx),
